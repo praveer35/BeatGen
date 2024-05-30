@@ -34,24 +34,41 @@ plt.show()'''
 
 exit = 1
 
-def getchords():
+def getchords(key, bars):
 
     pid = os.fork()
     os.execvp("g++", ["g++", "-std=c++11", "MusicGenerator.cpp"]) if pid == 0 else os.waitpid(pid, 0)
 
     tmpout = os.dup(pty.STDOUT_FILENO)
-    pipefd = os.pipe()
-    os.dup2(pipefd[1], pty.STDOUT_FILENO)
+    tmpin = os.dup(pty.STDIN_FILENO)
+    pipefd_in = os.pipe()
+    pipefd_out = os.pipe()
+    os.dup2(pipefd_out[1], pty.STDOUT_FILENO)
+    os.dup2(pipefd_in[0], pty.STDIN_FILENO)
 
-    if not os.fork(): os.execvp("./a.out", ["./a.out"])
+    os.write(pipefd_in[1], (str(key) + ' ' + str(bars)).encode('UTF-8'))
+    os.close(pipefd_in[1])
 
-    chordStr = os.read(pipefd[0], 1024).decode('UTF-8').strip()
+    if not os.fork():
+        os.close(pipefd_out[1])
+        os.close(pipefd_out[0])
+        os.close(pipefd_in[0])
+        os.execvp("./a.out", ["./a.out"])
+    
+    os.close(pipefd_out[1])
+    os.close(pipefd_in[0])
+
+    chordStr = os.read(pipefd_out[0], 1024).decode('UTF-8').strip()
+    os.close(pipefd_out[0])
     os.dup2(tmpout, 1)
+    os.dup2(tmpin, 0)
     os.close(tmpout)
+    os.close(tmpin)
 
     chords = chordStr.split(' ')
     for i in range(len(chords)):
         chords[i] = int(chords[i])
+    
     return chords
 
 #print(chords)
@@ -74,9 +91,9 @@ def vec_random_walk(vec, iter):
     return vec
 
 
-vec = [0, 1, 3, 5, 7]
-vec = vec_random_walk(vec, 1)
-print(vec)
+#vec = [0, 1, 3, 5, 7]
+#vec = vec_random_walk(vec, 1)
+#print(vec)
 
 #if exit: os._exit(0)
 
@@ -195,6 +212,9 @@ def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note):
 
 flutter = 8                 # how many notes in a measure
 
+key = 1
+bars = 8
+
 notes_played = set()
 
 
@@ -204,7 +224,7 @@ def loop():
 
     notes_played = set()
 
-    chords = getchords()
+    chords = getchords(key, bars)
     print(chords)
 
     min_note = -4096
@@ -214,9 +234,9 @@ def loop():
 
     seed = []
 
-    keynotes = [0, 0, 0, 0]
+    keynotes = [0] * 8
 
-    for i in range(4):
+    for i in range(bars):
         markov_vector = recalculate_markov_vector(last_note, chords[i], min_note, max_note)
         #bar_graph(markov_vector, last_note, chords[i])
         index = choose_index(markov_vector)
@@ -235,7 +255,7 @@ def loop():
     FLAT_NOTES = []
     x = []
 
-    for i in range(4):
+    for i in range(bars):
         last_note = keynotes[i]
         temp_notes = []
         out = ""
@@ -275,3 +295,76 @@ def loop():
     loop()
 
 loop()
+
+'''
+
+matches = []
+
+for i in range(4):
+    out = "measure " + str(i) + ":"
+    match_row = []
+    for j in range(4):
+        out += " " + str(match_index(measures[i], chords[j]))
+        match_row.append(match_index(measures[i], chords[j]))
+    matches.append(match_row)
+    print(out)
+
+matchability_noise = 0.2
+forward_switch = False
+backward_switch = False
+
+switch02 = True
+switch13 = True
+
+if matches[0][2] + matchability_noise > matches[2][2]:
+    print('measure 0 can repeat during measure 2')
+    #print(matches[0][2], matches[2][2])
+    forward_switch = True
+if matches[2][0] + matchability_noise > matches[0][0]:
+    print('measure 2 can repeat during measure 0')
+    #print(matches[0][2], matches[2][2])
+    backward_switch = True
+
+if forward_switch and not backward_switch:
+    print('measure 0 subbed into measure 2')
+elif not forward_switch and backward_switch:
+    print('measure 2 subbed into measure 0')
+elif forward_switch and backward_switch:
+    if matches[0][0] + matches[0][2] > matches[2][0] + matches[2][2]:
+        print('measure 0 subbed into measure 2')
+    else:
+        print('measure 2 subbed into measure 0')
+else:
+    switch02 = False
+
+forward_switch = False
+backward_switch = False
+
+if matches[1][3] + matchability_noise > matches[3][3]:
+    print('measure 1 can repeat during measure 3')
+    forward_switch = True
+if matches[3][1] + matchability_noise > matches[1][1]:
+    print('measure 3 can repeat during measure 1')
+    backward_switch = True
+
+if forward_switch and not backward_switch:
+    print('measure 1 subbed into measure 3')
+elif not forward_switch and backward_switch:
+    print('measure 3 subbed into measure 1')
+elif forward_switch and backward_switch:
+    if matches[1][1] + matches[1][3] > matches[3][1] + matches[3][3]:
+        print('measure 1 subbed into measure 3')
+    else:
+        print('measure 3 subbed into measure 1')
+else:
+    switch13 = False
+'''
+
+'''
+chord = 3
+
+for i in range(50):
+    note = i % 7
+    if (note == chord % 7 or note == (chord + 2) % 7 or note == (chord + 4) % 7):
+        print(vn(i))
+'''
