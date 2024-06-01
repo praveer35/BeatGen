@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <style>
+
+#dawArea {
+    width: 1280px;
+    height: 600px;
+    background-color: rgba(157, 157, 157, 0.4);
+    /* border-radius: 10px;  */
+}
+
+.note {
+    position: relative;
+    height: 26px;
+    /* background-color: rgb(167, 40, 40); */
+    border: 2px solid white;
+    opacity: 0.8;
+    color: white;
+    text-align: center;
+}
+
+    </style>
+    <script>
+
+function vn(val) {
+    let conv = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    append = (4 + Math.floor(val / 7));
+    note = val % 7;
+    if (note < 0) { note += 7; }
+    return "" + conv[note] + "" + append;
+}
+
+let leftOffset = 0;
+let notes = 0;
+
+function writeNote(noteVal, length, colorArray) {
+    // Create a new div element
+    const noteDiv = document.createElement('div');
+    // Set the class to "note"
+    noteDiv.className = 'note';
+    // Set the style properties
+    noteDiv.style.left = leftOffset + 'px';
+    noteDiv.style.top = (300 - 30 * noteVal - 30 * notes - 16*20*30) + 'px';
+    noteDiv.style.width = (80 * length - 4) + 'px';
+    noteDiv.style.backgroundColor = 'rgb(' + colorArray[0] + ', ' + colorArray[1] + ', ' + colorArray[2] + ')';
+    noteDiv.textContent = vn(noteVal);
+    
+    // Append the new note to the dawArea
+    document.getElementById('dawArea').appendChild(noteDiv);
+    
+    // Increment the leftOffset for the next note
+    leftOffset += 80 * length;
+    notes++;
+}
+
+function writeChord(chord, length, colorArray) {
+    writeNote(chord - 6, length, colorArray);
+    leftOffset -= 80 * length;
+    writeNote(chord - 4, length, colorArray);
+    leftOffset -= 80 * length;
+    writeNote(chord - 2, length, colorArray);
+}
+
+// Example usage: Adds three notes to the dawArea
+window.onload = function() {
+
+{% for i in range(16) %}
+{% for j in range(20) %}
+    const noteDiv{{i}}_{{j}} = document.createElement('div');
+    noteDiv{{i}}_{{j}}.className = 'note';
+    noteDiv{{i}}_{{j}}.style.left = (80 * {{ i }}) + 'px';
+    noteDiv{{i}}_{{j}}.style.top = (30 * {{ -20 * i }}) + 'px';
+    noteDiv{{i}}_{{j}}.style.width = '76px';
+    noteDiv{{i}}_{{j}}.style.borderColor = 'black';
+    document.getElementById('dawArea').appendChild(noteDiv{{i}}_{{j}});
+{% endfor %}
+{% endfor %}
+
+{% for chord in chords %}
+    writeChord({{ chord }}, 4, [0, 0, 255]);
+{% endfor %}
+
+leftOffset = 0;
+
+{% for note in melody %}
+    writeNote({{ note }}, 1, [167, 40, 40]);
+{% endfor %}
+    //writeNote(1, 80); // Note at position 10 with length 50
+    //writeNote(7, 30); // Note at position 15 with length 30
+    //writeNote(1, 70);  // Note at position 5 with length 70
+}
+
+    </script>
+    </head>
+    <body>
+        <h1>Key = {{ key }} and Bars = {{ bars }}</h1>
+        <p>Chords = {{ chords }}</p>
+        <p>Melody = {{ melody }}</p>
+    </body>
+    <div id="dawArea">
+    </div>
+</html>

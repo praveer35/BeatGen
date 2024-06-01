@@ -2,8 +2,10 @@ import random
 import os
 import pty
 import math
+import sys
 
 import numpy as np
+os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 import matplotlib.pyplot as plt
 
 def bar_graph(vec, note, chord):
@@ -14,7 +16,7 @@ def bar_graph(vec, note, chord):
         notes.append(vn(note + i - 7))
     
     fig, ax = plt.figure(figsize=(10, 5)), plt.gca()
-    ax.bar(notes, vec, color='black', width=0.1)
+    ax.bar(notes, vec, color='black', width=0.75)
     ax.set_title(vn(note) + ", chord=" + str(chord))
     plt.show()
 
@@ -190,7 +192,7 @@ def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note):
         h = 7 + delta + i
         # NOTE: current probability distribution is linear --> make it normal
         if l >= 14:
-            print('ERR: l=' + str(l))
+            #print('ERR: l=' + str(l), file=sys.stderr)
             return [0]
         if last_note + (l - 7) >= max_note - 8 and last_note + (l - 7) <= max_note:
             if l >= 0: markov_vector[l] += ((1 / ((i+1)**2)) * chord_boost2(last_note + (l - 7), chord)) * already_played_boost(last_note + (l - 7))
@@ -210,22 +212,22 @@ def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note):
 
 #chords = [1, 5, 6, 4]
 
-flutter = 8                 # how many notes in a measure
+flutter = 4                 # how many notes in a measure
 
 key = 1
-bars = 8
+bars = 4
 
 notes_played = set()
 
 
 def loop():
 
-    print("---------------------------")
+    #print("---------------------------")
 
     notes_played = set()
 
     chords = getchords(key, bars)
-    print(chords)
+    #print(chords)
 
     min_note = -4096
     max_note = -4096
@@ -244,7 +246,7 @@ def loop():
         last_note += (index - 7)
         #print(vn(last_note), chords[i])
         keynotes[i] = last_note
-        print(vn(last_note), chords[i])
+        #                               print(vn(last_note), chords[i])
         #print(markov_vector)
 
     keynotes.append(keynotes[0])
@@ -275,6 +277,7 @@ def loop():
             #bar_graph(markov_vector2, last_note, chords[i])
             if len(markov_vector2) == 1:
                 loop()
+                return
             index = choose_index(markov_vector2)
             last_note += (index - 7)
             temp_notes.append(last_note)
@@ -286,13 +289,16 @@ def loop():
                 min_note = last_note
             if last_note > max_note:
                 max_note = last_note
-        print(out)
+        #                               print(out)
         measures.append(temp_notes)
+    
+    print(' '.join([str(x) for x in chords]), file=sys.stderr)
+    print(' '.join([str(x) for x in FLAT_NOTES]))
 
-    plt.plot(x, FLAT_NOTES)
-    plt.title("Note graph")
-    plt.show()
-    loop()
+    #plt.plot(x, FLAT_NOTES)
+    #plt.title("Note graph")
+    #plt.show()
+    #loop()
 
 loop()
 
