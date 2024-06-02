@@ -44,13 +44,13 @@ unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine gen(seed);
 std::uniform_real_distribution<double> dis (0.0, 1.0);
 
-/*void printVec(std::string name, std::vector<int> vec) {
-	std::cout << name << ":";
+void printVec(std::vector<int> vec) {
+	//std::cout << name << ":";
 	for (auto &i : vec) {
 		std::cout << " " << i;
 	}
 	std::cout << std::endl;
-}*/
+}
 
 class ChordGenerator {
 
@@ -70,13 +70,24 @@ private:
 	std::array<double, SCALE_LEN> source_outgoing = {
 		0.1, 0.05, 0.15, 0, 0.2, 0.2, 0.3
 	};
+	/*
 	std::array<std::array<double, SCALE_LEN>, SCALE_LEN> pFSM = {{
 		{0, 0, 0.1, 0.06, 0.24, 0.32, 0.28},
 		{0, 0, 0.22, 0.17, 0.22, 0.11, 0.28},
 		{0, 0, 0, 0, 0.5, 0, 0.5},
 		{0, 0.2, 0, 0, 0.3, 0, 0.5},
 		{0.2, 0.2, 0, 0.15, 0, 0.25, 0.2},
-		{0.5, 0.14, 0.19, 0.06, 0.1, 0, 0.1},
+		{0.41, 0.14, 0.19, 0.06, 0.1, 0, 0.1},
+		{0.12, 0.15, 0.15, 0.1, 0.27, 0.21, 0}
+	}};
+	*/
+	std::array<std::array<double, SCALE_LEN>, SCALE_LEN> pFSM = {{
+		{0, 0, 0.24, 0.06, 0.12, 0.16, 0.42},
+		{0, 0, 0.22, 0.17, 0.22, 0.11, 0.28},
+		{0, 0, 0, 0, 0.5, 0, 0.5},
+		{0, 0.2, 0, 0, 0.3, 0, 0.5},
+		{0.1, 0.2, 0, 0.25, 0, 0.15, 0.3},
+		{0.1, 0.14, 0.19, 0.17, 0.1, 0, 0.3},
 		{0.12, 0.15, 0.15, 0.1, 0.27, 0.21, 0}
 	}};
 	int key;
@@ -193,10 +204,25 @@ public:
 
 		std::vector<int> progression;
 
-		progression.push_back(source);
+		// NOTE: REMOVE LATER //
+		if (source < 3) {
+			progression.push_back(source+1);
+		} else {
+			progression.push_back(source);
+		}
 		for (int i = 0; i < k - 1; i++) {
 			source = edges[source][k - i - 1];
-			progression.push_back(source);
+
+
+			// NOTE: REMOVE LATER //
+			if (source < 3) {
+				progression.push_back(source+1);
+			} else {
+				progression.push_back(source);
+			}
+
+
+			//progression.push_back(source);
 		}
 
 		return progression;
@@ -244,17 +270,36 @@ public:
 	}*/
 };
 
+bool contains_duplicate(std::vector<int> vec) {
+	std::set<int> myset;
+	for (auto &i : vec) {
+		if (myset.find(i) != myset.end()) { return true; }
+		myset.insert(i);
+	}
+	return false;
+}
 
 int main() {
+	/*std::vector<int> vec = {4, 3, 6, 3};
+	if (contains_duplicate(vec)) { std::cout << "true\n"; }
+	else { std::cout << "false\n"; }
+	return 0;*/
 	int key = 0;
 	int bars = 0;
-	std::cin >> key >> bars;
+	//std::cin >> key >> bars;
+	key = 1;
+	bars = 4;
 	ChordGenerator chordGen(key, bars);
-	std::vector<int> chord_list = chordGen.generateChords();
+	std::vector<int> chord_list;
+	while (true) {
+		chord_list = chordGen.generateChords();
+		//printVec(chord_list);
+		if (!contains_duplicate(chord_list)) { break; }
+	}
 	//std::vector<std::string> chord_list = chordGen.generateChords();
 	for (const auto& chord : chord_list) {
-		if (chord < 3) std::cout << (chord+1) << " ";
-		else std::cout << chord << " ";
+		//if (chord < 3) std::cout << (chord+1) << " ";
+		std::cout << chord << " ";
 	}
 
 	return 0;

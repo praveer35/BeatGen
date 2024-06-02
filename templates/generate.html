@@ -3,6 +3,12 @@
     <head>
     <style>
 
+body {
+    font-family: sans-serif;
+    background-color: black;
+    color: white;
+}
+
 #dawArea {
     width: 1280px;
     height: 600px;
@@ -12,11 +18,10 @@
 
 .note {
     position: relative;
-    height: 26px;
+    height: 28px;
     /* background-color: rgb(167, 40, 40); */
-    border: 2px solid white;
+    border: 1px solid white;
     opacity: 0.8;
-    color: white;
     text-align: center;
 }
 
@@ -42,7 +47,7 @@ function writeNote(noteVal, length, colorArray) {
     // Set the style properties
     noteDiv.style.left = leftOffset + 'px';
     noteDiv.style.top = (300 - 30 * noteVal - 30 * notes - 16*20*30) + 'px';
-    noteDiv.style.width = (80 * length - 4) + 'px';
+    noteDiv.style.width = (80 * length - 2) + 'px';
     noteDiv.style.backgroundColor = 'rgb(' + colorArray[0] + ', ' + colorArray[1] + ', ' + colorArray[2] + ')';
     noteDiv.textContent = vn(noteVal);
     
@@ -71,7 +76,7 @@ window.onload = function() {
     noteDiv{{i}}_{{j}}.className = 'note';
     noteDiv{{i}}_{{j}}.style.left = (80 * {{ i }}) + 'px';
     noteDiv{{i}}_{{j}}.style.top = (30 * {{ -20 * i }}) + 'px';
-    noteDiv{{i}}_{{j}}.style.width = '76px';
+    noteDiv{{i}}_{{j}}.style.width = '78px';
     noteDiv{{i}}_{{j}}.style.borderColor = 'black';
     document.getElementById('dawArea').appendChild(noteDiv{{i}}_{{j}});
 {% endfor %}
@@ -83,8 +88,8 @@ window.onload = function() {
 
 leftOffset = 0;
 
-{% for note in melody %}
-    writeNote({{ note }}, 1, [167, 40, 40]);
+{% for i in range(len) %}
+    writeNote({{ melody[i] }}, {{ rhythm[i] }}, [167, 40, 40]);
 {% endfor %}
     //writeNote(1, 80); // Note at position 10 with length 50
     //writeNote(7, 30); // Note at position 15 with length 30
@@ -95,8 +100,8 @@ leftOffset = 0;
     </head>
     <body>
         <h1>Key = {{ key }} and Bars = {{ bars }}</h1>
-        <p>Chords = {{ chords }}</p>
-        <p>Melody = {{ melody }}</p>
+        <!--<p>Chords = {{ chords }}</p>
+        <p>Melody = {{ melody }}</p>-->
     </body>
     <div id="dawArea">
     </div>

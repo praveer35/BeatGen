@@ -3,6 +3,8 @@ import os
 import subprocess
 from subprocess import Popen, PIPE
 
+import json
+
 app = Flask(__name__)
 
 #def get_response(filename):
@@ -21,12 +23,22 @@ def generate(key, bars):
         text=True             # Get the output as string
     )
 
-    melody = [int(x) for x in result.stdout.replace('\n', '').split(' ')]
-    chords = [int(x) for x in result.stderr.replace('\n', '').split(' ')]
+    data = json.loads(result.stdout)
 
-    print(melody)
+    melody = [int(x) for x in data['melody'].split(' ')]
+    chords = [int(x) for x in data['chords'].split(' ')]
 
-    return render_template('generate.html', melody=melody, chords=chords, key=key, bars=bars)
+    result = subprocess.run(
+        ['python3', 'rhythm.py'],
+        capture_output=True,  # Capture the output of the script
+        text=True             # Get the output as string
+    )
+
+    rhythm = [float(x) for x in result.stdout.replace('\n', '').split(' ')]
+
+    #print(melody)
+
+    return render_template('generate.html', len=len(melody), melody=melody, rhythm=rhythm, chords=chords, key=key, bars=bars)
 
 if __name__ == '__main__':
     app.run(debug=True, port=1601)

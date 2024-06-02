@@ -3,6 +3,9 @@ import os
 import pty
 import math
 import sys
+import json
+
+from itertools import chain
 
 import numpy as np
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
@@ -19,19 +22,6 @@ def bar_graph(vec, note, chord):
     ax.bar(notes, vec, color='black', width=0.75)
     ax.set_title(vn(note) + ", chord=" + str(chord))
     plt.show()
-
-'''data = {'C':20, 'C++':15, 'Java':30, 
-        'Python':35}
-courses = list(data.keys())
-values = list(data.values())
-  
-fig = plt.figure(figsize = (10, 5))
- 
-# creating the bar plot
-plt.bar(courses, values, color ='black', 
-        width = 0.1)
- 
-plt.show()'''
 
 
 exit = 1
@@ -195,10 +185,10 @@ def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note):
             #print('ERR: l=' + str(l), file=sys.stderr)
             return [0]
         if last_note + (l - 7) >= max_note - 8 and last_note + (l - 7) <= max_note:
-            if l >= 0: markov_vector[l] += ((1 / ((i+1)**2)) * chord_boost2(last_note + (l - 7), chord)) * already_played_boost(last_note + (l - 7))
+            if l >= 0: markov_vector[l] += ((1 / ((i+1)**3)) * chord_boost2(last_note + (l - 7), chord)) * already_played_boost(last_note + (l - 7))
             #print("ACCEPTED:", last_note + (l-7), max_note)
         if last_note + (h - 7) <= min_note + 8 and last_note + (h - 7) >= min_note:
-            if h < 14: markov_vector[h] += ((1 / ((i+1)**2)) * chord_boost2(last_note + (h - 7), chord)) * already_played_boost(last_note + (h - 7))
+            if h < 14: markov_vector[h] += ((1 / ((i+1)**3)) * chord_boost2(last_note + (h - 7), chord)) * already_played_boost(last_note + (h - 7))
             #print("ACCEPTED:", last_note + (h-7), min_note)
     if last_note % 7 == 5:      # F
         markov_vector[7+3] = 0
@@ -219,6 +209,9 @@ bars = 4
 
 notes_played = set()
 
+measures = []
+chords = getchords(key, bars)
+
 
 def loop():
 
@@ -226,7 +219,7 @@ def loop():
 
     notes_played = set()
 
-    chords = getchords(key, bars)
+    #chords = getchords(key, bars)
     #print(chords)
 
     min_note = -4096
@@ -252,7 +245,7 @@ def loop():
     keynotes.append(keynotes[0])
     #print(keynotes)
 
-    measures = []
+    #measures = []
 
     FLAT_NOTES = []
     x = []
@@ -292,8 +285,8 @@ def loop():
         #                               print(out)
         measures.append(temp_notes)
     
-    print(' '.join([str(x) for x in chords]), file=sys.stderr)
-    print(' '.join([str(x) for x in FLAT_NOTES]))
+    # print(' '.join([str(x) for x in chords]), file=sys.stderr)
+    # print(' '.join([str(x) for x in FLAT_NOTES]))
 
     #plt.plot(x, FLAT_NOTES)
     #plt.title("Note graph")
@@ -302,7 +295,8 @@ def loop():
 
 loop()
 
-'''
+
+
 
 matches = []
 
@@ -313,7 +307,7 @@ for i in range(4):
         out += " " + str(match_index(measures[i], chords[j]))
         match_row.append(match_index(measures[i], chords[j]))
     matches.append(match_row)
-    print(out)
+    #print(out)
 
 matchability_noise = 0.2
 forward_switch = False
@@ -323,23 +317,27 @@ switch02 = True
 switch13 = True
 
 if matches[0][2] + matchability_noise > matches[2][2]:
-    print('measure 0 can repeat during measure 2')
+    #print('measure 0 can repeat during measure 2')
     #print(matches[0][2], matches[2][2])
     forward_switch = True
 if matches[2][0] + matchability_noise > matches[0][0]:
-    print('measure 2 can repeat during measure 0')
+    #print('measure 2 can repeat during measure 0')
     #print(matches[0][2], matches[2][2])
     backward_switch = True
 
 if forward_switch and not backward_switch:
-    print('measure 0 subbed into measure 2')
+    #print('measure 0 subbed into measure 2')
+    measures[2] = measures[0]
 elif not forward_switch and backward_switch:
-    print('measure 2 subbed into measure 0')
+    #print('measure 2 subbed into measure 0')
+    measures[0] = measures[2]
 elif forward_switch and backward_switch:
     if matches[0][0] + matches[0][2] > matches[2][0] + matches[2][2]:
-        print('measure 0 subbed into measure 2')
+        #print('measure 0 subbed into measure 2')
+        measures[2] = measures[0]
     else:
-        print('measure 2 subbed into measure 0')
+        #print('measure 2 subbed into measure 0')
+        measures[0] = measures[2]
 else:
     switch02 = False
 
@@ -347,24 +345,43 @@ forward_switch = False
 backward_switch = False
 
 if matches[1][3] + matchability_noise > matches[3][3]:
-    print('measure 1 can repeat during measure 3')
+    #print('measure 1 can repeat during measure 3')
     forward_switch = True
 if matches[3][1] + matchability_noise > matches[1][1]:
-    print('measure 3 can repeat during measure 1')
+    #print('measure 3 can repeat during measure 1')
     backward_switch = True
 
 if forward_switch and not backward_switch:
-    print('measure 1 subbed into measure 3')
+    #print('measure 1 subbed into measure 3')
+    measures[3] = measures[1]
 elif not forward_switch and backward_switch:
-    print('measure 3 subbed into measure 1')
+    #print('measure 3 subbed into measure 1')
+    measures[1] = measures[3]
 elif forward_switch and backward_switch:
     if matches[1][1] + matches[1][3] > matches[3][1] + matches[3][3]:
-        print('measure 1 subbed into measure 3')
+        #print('measure 1 subbed into measure 3')
+        measures[3] = measures[1]
     else:
-        print('measure 3 subbed into measure 1')
+        #print('measure 3 subbed into measure 1')
+        measures[1] = measures[3]
 else:
     switch13 = False
-'''
+
+
+FLAT_NOTES = list(chain.from_iterable(measures))
+
+data = {
+    'chords': ' '.join([str(x) for x in chords]),
+    'melody': ' '.join([str(x) for x in FLAT_NOTES])
+}
+
+json.dump(data, sys.stdout)
+
+#print(json.)
+
+#print(' '.join([str(x) for x in chords]), file=sys.stderr)
+#print(' '.join([str(x) for x in FLAT_NOTES]))
+
 
 '''
 chord = 3
