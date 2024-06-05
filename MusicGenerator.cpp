@@ -291,11 +291,11 @@ int main() {
 	bars = 4;
 	ChordGenerator chordGen(key, bars);
 	std::vector<int> chord_list;
-	while (true) {
+	//while (true) {
 		chord_list = chordGen.generateChords();
 		//printVec(chord_list);
-		if (!contains_duplicate(chord_list)) { break; }
-	}
+		//if (!contains_duplicate(chord_list)) { break; }
+	//}
 	//std::vector<std::string> chord_list = chordGen.generateChords();
 	for (const auto& chord : chord_list) {
 		//if (chord < 3) std::cout << (chord+1) << " ";

@@ -11,6 +11,27 @@ import numpy as np
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 import matplotlib.pyplot as plt
 
+
+data_input = json.loads(input())
+
+chords = data_input['chords']
+bars = len(chords)
+flutter = int(data_input['flutter'])
+pitch_range = int(data_input['pitch_range'])
+pitch_viscosity = int(data_input['pitch_viscosity'])
+hook_chord_boost_onchord = float(data_input['hook_chord_boost_onchord'])
+hook_chord_boost_2_and_6 = float(data_input['hook_chord_boost_2_and_6'])
+hook_chord_boost_7 = float(data_input['hook_chord_boost_7'])
+hook_chord_boost_else = float(data_input['hook_chord_boost_else'])
+nonhook_chord_boost_onchord = float(data_input['nonhook_chord_boost_onchord'])
+nonhook_chord_boost_2_and_6 = float(data_input['nonhook_chord_boost_2_and_6'])
+nonhook_chord_boost_7 = float(data_input['nonhook_chord_boost_7'])
+nonhook_chord_boost_else = float(data_input['nonhook_chord_boost_else'])
+matchability_noise = float(data_input['matchability_noise'])
+already_played_boost = float(data_input['already_played_boost'])
+
+
+
 def bar_graph(vec, note, chord):
 
     notes = []
@@ -117,15 +138,15 @@ def chord_boost(note, chord):
     chord += 1
     if (note == chord % 7 or note == (chord + 2) % 7 or note == (chord + 4) % 7):
         #print(str(chord) + ": " + vn(note))
-        return 5
+        return hook_chord_boost_onchord
     if (note == (chord + 1) % 7 or note == (chord + 5) % 7):
-        return 0.5
+        return hook_chord_boost_2_and_6
     if (chord == 2 or chord == 3 or chord == 5) and note == (chord + 6) % 7:
-        return 0.5
-    return 0
+        return hook_chord_boost_7
+    return hook_chord_boost_else
 
-def already_played_boost(note):
-    return 1.25 if note in notes_played else 1
+def already_played_boost_factor(note, notes_played):
+    return already_played_boost if note in notes_played else 1
 
 def reverse_gradient_factor(last_note, inc):
     diff = 2 - last_note
@@ -150,16 +171,16 @@ def sanitize_note(markov_vector, last_note, chord, index):
         markov_vector[index] = 0
 
 def recalculate_markov_vector(last_note, chord, min_note, max_note):
-    markov_vector = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    markov_vector = [0] * 15
     for i in range(1, 7):
         l = 7 - i
         h = 7 + i
         # NOTE: current probability distribution is linear --> make it normal
-        if max_note == -4096 or (last_note - i >= max_note - 8 and last_note - i <= max_note):
+        if max_note == -4096 or (last_note - i >= max_note - pitch_range and last_note - i <= max_note):
             markov_vector[l] += (1 / i) * chord_boost(last_note - i, chord) + reverse_gradient_factor(last_note, -i)
             sanitize_note(markov_vector, last_note, chord, l)
             #print("ACCEPTED:", last_note - i, max_note)
-        if min_note == -4096 or (last_note + i <= min_note + 8 and last_note + i >= min_note):
+        if min_note == -4096 or (last_note + i <= min_note + pitch_range and last_note + i >= min_note):
             markov_vector[h] += (1 / i) * chord_boost(last_note + i, chord) + reverse_gradient_factor(last_note, i)
             sanitize_note(markov_vector, last_note, chord, h)
             #print("ACCEPTED:", last_note + i, min_note)
@@ -176,15 +197,15 @@ def chord_boost2(note, chord):
     chord += 1
     if (note == chord % 7 or note == (chord + 2) % 7 or note == (chord + 4) % 7):
         #print(str(chord) + ": " + vn(note))
-        return 3
+        return nonhook_chord_boost_onchord
     if (note == (chord + 1) % 7 or note == (chord + 5) % 7):
-        return 1
+        return nonhook_chord_boost_2_and_6
     if (chord == 2 or chord == 3 or chord == 5) and note == (chord + 6) % 7:
-        return 1
-    return 0.5
+        return nonhook_chord_boost_7
+    return nonhook_chord_boost_else
 
-def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note):
-    markov_vector = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note, notes_played):
+    markov_vector = [0] * 15
     for i in range(14):
         l = 7 + delta - i
         h = 7 + delta + i
@@ -192,14 +213,14 @@ def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note):
         if l >= 14:
             #print('ERR: l=' + str(l), file=sys.stderr)
             return [0]
-        if last_note + (l - 7) >= max_note - 8 and last_note + (l - 7) <= max_note:
+        if last_note + (l - 7) >= max_note - pitch_range and last_note + (l - 7) <= max_note:
             if l >= 0:
-                markov_vector[l] += ((1 / ((i+1)**4)) * chord_boost2(last_note + (l - 7), chord)) * already_played_boost(last_note + (l - 7))
+                markov_vector[l] += ((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (l - 7), chord)) * already_played_boost_factor(last_note + (l - 7), notes_played)
                 sanitize_note(markov_vector, last_note, chord, l)
             #print("ACCEPTED:", last_note + (l-7), max_note)
-        if last_note + (h - 7) <= min_note + 8 and last_note + (h - 7) >= min_note:
+        if last_note + (h - 7) <= min_note + pitch_range and last_note + (h - 7) >= min_note:
             if h < 14:
-                markov_vector[h] += ((1 / ((i+1)**4)) * chord_boost2(last_note + (h - 7), chord)) * already_played_boost(last_note + (h - 7))
+                markov_vector[h] += ((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (h - 7), chord)) * already_played_boost_factor(last_note + (h - 7), notes_played)
                 sanitize_note(markov_vector, last_note, chord, h)
             #print("ACCEPTED:", last_note + (h-7), min_note)
     '''if last_note % 7 == 5:      # F
@@ -214,15 +235,15 @@ def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note):
 
 #chords = [1, 5, 6, 4]
 
-flutter = 4                 # how many notes in a measure
+# flutter = 4                 # how many notes in a measure
 
 key = 1
-bars = 4
+# bars = 4
 
 notes_played = set()
 
 measures = []
-chords = getchords(key, bars)
+#chords = getchords(key, bars)
 
 
 def loop():
@@ -241,7 +262,7 @@ def loop():
 
     seed = []
 
-    keynotes = [0] * 8
+    keynotes = [0] * bars
 
     for i in range(bars):
         markov_vector = recalculate_markov_vector(last_note, chords[i], min_note, max_note)
@@ -278,7 +299,7 @@ def loop():
         for j in range(flutter-1):
             delta = round((keynotes[i+1] - last_note) / (flutter - j - 1))
             #print(max_note, min_note)
-            markov_vector2 = recalculate_markov_vector2(last_note, chords[i], delta, min_note, max_note)
+            markov_vector2 = recalculate_markov_vector2(last_note, chords[i], delta, min_note, max_note, notes_played)
             #bar_graph(markov_vector2, last_note, chords[i])
             if len(markov_vector2) == 1:
                 loop()
@@ -309,82 +330,89 @@ loop()
 
 
 
+def set_repetitions():
+    matches = []
 
-matches = []
+    for i in range(4):
+        out = "measure " + str(i) + ":"
+        match_row = []
+        for j in range(4):
+            out += " " + str(match_index(measures[i], chords[j]))
+            match_row.append(match_index(measures[i], chords[j]))
+        matches.append(match_row)
+        #print(out)
 
-for i in range(4):
-    out = "measure " + str(i) + ":"
-    match_row = []
-    for j in range(4):
-        out += " " + str(match_index(measures[i], chords[j]))
-        match_row.append(match_index(measures[i], chords[j]))
-    matches.append(match_row)
-    #print(out)
+    matchability_noise = 0.1
+    forward_switch = False
+    backward_switch = False
 
-matchability_noise = 0.1
-forward_switch = False
-backward_switch = False
+    switch02 = True
+    switch13 = True
 
-switch02 = True
-switch13 = True
+    if matches[0][2] + matchability_noise > matches[2][2]:
+        #print('measure 0 can repeat during measure 2')
+        #print(matches[0][2], matches[2][2])
+        forward_switch = True
+    if matches[2][0] + matchability_noise > matches[0][0]:
+        #print('measure 2 can repeat during measure 0')
+        #print(matches[0][2], matches[2][2])
+        backward_switch = True
 
-if matches[0][2] + matchability_noise > matches[2][2]:
-    #print('measure 0 can repeat during measure 2')
-    #print(matches[0][2], matches[2][2])
-    forward_switch = True
-if matches[2][0] + matchability_noise > matches[0][0]:
-    #print('measure 2 can repeat during measure 0')
-    #print(matches[0][2], matches[2][2])
-    backward_switch = True
-
-if forward_switch and not backward_switch:
-    #print('measure 0 subbed into measure 2')
-    measures[2] = measures[0]
-elif not forward_switch and backward_switch:
-    #print('measure 2 subbed into measure 0')
-    measures[0] = measures[2]
-elif forward_switch and backward_switch:
-    if matches[0][0] + matches[0][2] > matches[2][0] + matches[2][2]:
+    if forward_switch and not backward_switch:
         #print('measure 0 subbed into measure 2')
         measures[2] = measures[0]
-    else:
+    elif not forward_switch and backward_switch:
         #print('measure 2 subbed into measure 0')
         measures[0] = measures[2]
-else:
-    switch02 = False
+    elif forward_switch and backward_switch:
+        if matches[0][0] + matches[0][2] > matches[2][0] + matches[2][2]:
+            #print('measure 0 subbed into measure 2')
+            measures[2] = measures[0]
+        else:
+            #print('measure 2 subbed into measure 0')
+            measures[0] = measures[2]
+    else:
+        switch02 = False
 
-forward_switch = False
-backward_switch = False
+    forward_switch = False
+    backward_switch = False
 
-if matches[1][3] + matchability_noise > matches[3][3]:
-    #print('measure 1 can repeat during measure 3')
-    forward_switch = True
-if matches[3][1] + matchability_noise > matches[1][1]:
-    #print('measure 3 can repeat during measure 1')
-    backward_switch = True
+    if matches[1][3] + matchability_noise > matches[3][3]:
+        #print('measure 1 can repeat during measure 3')
+        forward_switch = True
+    if matches[3][1] + matchability_noise > matches[1][1]:
+        #print('measure 3 can repeat during measure 1')
+        backward_switch = True
 
-if forward_switch and not backward_switch:
-    #print('measure 1 subbed into measure 3')
-    measures[3] = measures[1]
-elif not forward_switch and backward_switch:
-    #print('measure 3 subbed into measure 1')
-    measures[1] = measures[3]
-elif forward_switch and backward_switch:
-    if matches[1][1] + matches[1][3] > matches[3][1] + matches[3][3]:
+    if forward_switch and not backward_switch:
         #print('measure 1 subbed into measure 3')
         measures[3] = measures[1]
-    else:
+    elif not forward_switch and backward_switch:
         #print('measure 3 subbed into measure 1')
         measures[1] = measures[3]
-else:
-    switch13 = False
+    elif forward_switch and backward_switch:
+        if matches[1][1] + matches[1][3] > matches[3][1] + matches[3][3]:
+            #print('measure 1 subbed into measure 3')
+            measures[3] = measures[1]
+        else:
+            #print('measure 3 subbed into measure 1')
+            measures[1] = measures[3]
+    else:
+        switch13 = False
 
+if bars == 4:
+    set_repetitions()
 
 FLAT_NOTES = list(chain.from_iterable(measures))
 
+# data = {
+#     'chords': ' '.join([str(x) for x in chords]),
+#     'melody': ' '.join([vn(x) for x in FLAT_NOTES])
+# }
+
 data = {
-    'chords': ' '.join([str(x) for x in chords]),
-    'melody': ' '.join([str(x) for x in FLAT_NOTES])
+    'chords': chords,
+    'melody': FLAT_NOTES
 }
 
 json.dump(data, sys.stdout)
@@ -403,3 +431,49 @@ for i in range(50):
     if (note == chord % 7 or note == (chord + 2) % 7 or note == (chord + 4) % 7):
         print(vn(i))
 '''
+
+
+
+
+
+
+"""import random
+
+matrix = [
+    [0, 0.2, 0.3, 0.5],
+    [0.2, 0, 0.3, 0.5],
+    [0.3, 0.3, 0, 0.4],
+    [0.3, 0.5, 0.2, 0]
+]
+
+notes = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+
+offset = 0
+
+def vn(s):
+    if s == 0:
+        print(notes[offset % 7])
+    elif s == 1:
+        print(notes[(offset + 1) % 7])
+    elif s == 2:
+        print(notes[(offset + 2) % 7])
+    elif s == 3:
+        print(notes[(offset + 4) % 7])
+    if random.randint(0, 1) == 0:
+        print('up')
+    else:
+        print('down')
+
+def sample(n, s):
+    for _ in range(n):
+        rand = random.uniform(0, 1)
+        k = 0
+        while rand > 0:
+            rand -= matrix[s][k]
+            if rand < 0:
+                break
+            k += 1
+        s = k
+        vn(s)
+
+sample(8, 0)"""

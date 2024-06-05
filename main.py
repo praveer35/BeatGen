@@ -41,4 +41,6 @@ def generate(key, bars):
     return render_template('generate.html', len=len(melody), melody=melody, rhythm=rhythm, chords=chords, key=key, bars=bars)
 
 if __name__ == '__main__':
+    pid = os.fork()
+    os.execvp("g++", ["g++", "-std=c++11", "MusicGenerator.cpp"]) if pid == 0 else os.waitpid(pid, 0)
     app.run(debug=True, port=1601)
