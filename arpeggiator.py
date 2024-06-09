@@ -2,7 +2,8 @@ from subprocess import Popen, PIPE
 import json
 
 data_to_arpeggiator = {
-    'chords': [6],
+    'chords': [6, 5, 4, 5],
+    'rhythm': [0.5] * 8,
     'flutter': 8,
     'pitch_range': 12,
     'pitch_viscosity': 0,
@@ -21,8 +22,9 @@ data_to_arpeggiator = {
 p = Popen(['python3', 'voice_line.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
 stdout_data, stderr_data = p.communicate(input=json.dumps(data_to_arpeggiator))
 
-
-melody = json.loads(stdout_data)['melody']
-
-print(melody)
+print(stdout_data)
 print(stderr_data)
+#melody = json.loads(stdout_data)['melody']
+
+#print(melody)
+#print(stderr_data)

@@ -4,6 +4,7 @@ import pty
 import math
 import sys
 import json
+import time
 
 from itertools import chain
 
@@ -11,10 +12,31 @@ import numpy as np
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 import matplotlib.pyplot as plt
 
+#time.sleep(2)
 
-data_input = json.loads(input())
+"""data_input = {
+    'chords': [int(x) for x in '6 4 3 2'.split(' ')], 
+    'flutter': 4,
+    'pitch_range': 8,
+    'pitch_viscosity': 4,
+    'hook_chord_boost_onchord': 5.0,
+    'hook_chord_boost_2_and_6': 0.5,
+    'hook_chord_boost_7': 0.5,
+    'hook_chord_boost_else': 0.0,
+    'nonhook_chord_boost_onchord': 3,
+    'nonhook_chord_boost_2_and_6': 1,
+    'nonhook_chord_boost_7': 1,
+    'nonhook_chord_boost_else': 0.5,
+    'already_played_boost': 1.25,
+    'matchability_noise': 0.1,
+}"""
+
+data_input = json.loads(sys.stdin.read())
+
+# print(sys.stdin.read())
 
 chords = data_input['chords']
+rhythm = data_input['rhythm']
 bars = len(chords)
 flutter = int(data_input['flutter'])
 pitch_range = int(data_input['pitch_range'])
@@ -29,8 +51,6 @@ nonhook_chord_boost_7 = float(data_input['nonhook_chord_boost_7'])
 nonhook_chord_boost_else = float(data_input['nonhook_chord_boost_else'])
 matchability_noise = float(data_input['matchability_noise'])
 already_played_boost = float(data_input['already_played_boost'])
-
-
 
 def bar_graph(vec, note, chord):
 
@@ -213,14 +233,14 @@ def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note, note
         if l >= 14:
             #print('ERR: l=' + str(l), file=sys.stderr)
             return [0]
-        if last_note + (l - 7) >= max_note - pitch_range and last_note + (l - 7) <= max_note:
-            if l >= 0:
-                markov_vector[l] += ((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (l - 7), chord)) * already_played_boost_factor(last_note + (l - 7), notes_played)
+        if (last_note + (l - 7) >= max_note - pitch_range or last_note + (l - 7) <= max_note) and (last_note + (l - 7) <= max_note or last_note + (l - 7) >= min_note):
+            if l >= 0 and l < 14:
+                markov_vector[l] += 1024 * (((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (l - 7), chord)) * already_played_boost_factor(last_note + (l - 7), notes_played))
                 sanitize_note(markov_vector, last_note, chord, l)
             #print("ACCEPTED:", last_note + (l-7), max_note)
-        if last_note + (h - 7) <= min_note + pitch_range and last_note + (h - 7) >= min_note:
-            if h < 14:
-                markov_vector[h] += ((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (h - 7), chord)) * already_played_boost_factor(last_note + (h - 7), notes_played)
+        if (last_note + (h - 7) <= min_note + pitch_range or last_note + (l - 7) >= min_note) and (last_note + (h - 7) >= min_note or last_note + (h - 7) <= max_note):
+            if h < 14 and h >= 0:
+                markov_vector[h] += 1024 * (((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (h - 7), chord)) * already_played_boost_factor(last_note + (h - 7), notes_played))
                 sanitize_note(markov_vector, last_note, chord, h)
             #print("ACCEPTED:", last_note + (h-7), min_note)
     '''if last_note % 7 == 5:      # F
@@ -410,9 +430,10 @@ FLAT_NOTES = list(chain.from_iterable(measures))
 #     'melody': ' '.join([vn(x) for x in FLAT_NOTES])
 # }
 
+melody = [[FLAT_NOTES[i], rhythm[i]] for i in range(len(FLAT_NOTES))]
+
 data = {
-    'chords': chords,
-    'melody': FLAT_NOTES
+    'melody': melody
 }
 
 json.dump(data, sys.stdout)

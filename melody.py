@@ -35,7 +35,7 @@ def getchords(key, bars):
     os.dup2(pipefd_out[1], pty.STDOUT_FILENO)
     os.dup2(pipefd_in[0], pty.STDIN_FILENO)
 
-    os.write(pipefd_in[1], (str(key) + ' ' + str(bars)).encode('UTF-8'))
+    os.write(pipefd_in[1], (str(bars)).encode('UTF-8'))
     os.close(pipefd_in[1])
 
     if not os.fork():
@@ -245,7 +245,7 @@ def loop():
 
     for i in range(bars):
         markov_vector = recalculate_markov_vector(last_note, chords[i], min_note, max_note)
-        #bar_graph(markov_vector, last_note, chords[i])
+        bar_graph(markov_vector, last_note, chords[i])
         index = choose_index(markov_vector)
         #print(index - 7)
         last_note += (index - 7)
@@ -279,7 +279,7 @@ def loop():
             delta = round((keynotes[i+1] - last_note) / (flutter - j - 1))
             #print(max_note, min_note)
             markov_vector2 = recalculate_markov_vector2(last_note, chords[i], delta, min_note, max_note)
-            #bar_graph(markov_vector2, last_note, chords[i])
+            bar_graph(markov_vector2, last_note, chords[i])
             if len(markov_vector2) == 1:
                 loop()
                 return

@@ -6,6 +6,7 @@
 #include <random>
 #include <vector>
 #include <set>
+#include <unistd.h>
 
 /*class ChordGenerator {
 private:
@@ -284,18 +285,19 @@ int main() {
 	if (contains_duplicate(vec)) { std::cout << "true\n"; }
 	else { std::cout << "false\n"; }
 	return 0;*/
-	int key = 0;
+	//sleep(2);
+	int key = 1;
 	int bars = 0;
-	//std::cin >> key >> bars;
-	key = 1;
-	bars = 4;
+	std::cin >> bars;
+	//key = 1;
+	//bars = 4;
 	ChordGenerator chordGen(key, bars);
 	std::vector<int> chord_list;
-	//while (true) {
+	while (true) {
 		chord_list = chordGen.generateChords();
 		//printVec(chord_list);
-		//if (!contains_duplicate(chord_list)) { break; }
-	//}
+		if (!contains_duplicate(chord_list)) { break; }
+	}
 	//std::vector<std::string> chord_list = chordGen.generateChords();
 	for (const auto& chord : chord_list) {
 		//if (chord < 3) std::cout << (chord+1) << " ";
