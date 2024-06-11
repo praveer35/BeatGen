@@ -1,2 +1,2 @@
 # MusicGenerator
-Generates music using stochastic processes, non-Markovian chains, and music theory
+Generates music using stochastic processes, semi-Markovian chains, Hidden Markov Models and music theory
