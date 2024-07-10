@@ -4,7 +4,12 @@ import pty
 import math
 import sys
 import json
+import pickle
+from hmmlearn import hmm
+import numpy as np
 import time
+
+import lib
 
 from itertools import chain
 
@@ -14,29 +19,32 @@ import matplotlib.pyplot as plt
 
 #time.sleep(2)
 
-"""data_input = {
-    'chords': [int(x) for x in '6 4 3 2'.split(' ')], 
-    'flutter': 4,
-    'pitch_range': 8,
-    'pitch_viscosity': 4,
-    'hook_chord_boost_onchord': 5.0,
-    'hook_chord_boost_2_and_6': 0.5,
-    'hook_chord_boost_7': 0.5,
-    'hook_chord_boost_else': 0.0,
-    'nonhook_chord_boost_onchord': 3,
-    'nonhook_chord_boost_2_and_6': 1,
-    'nonhook_chord_boost_7': 1,
-    'nonhook_chord_boost_else': 0.5,
-    'already_played_boost': 1.25,
-    'matchability_noise': 0.1,
-}"""
+# data_input = {
+#     'chords': [int(x) for x in '6 4 3 2'.split(' ')], 
+#     #'rhythm': [1.0, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 1.0, 0.75, 0.25, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 2.0, 1.0, 0.5, 0.5],
+#     'rhythm': lib.get_rhythm({'chords': [1,3,6,4]}),
+#     'flutter': 4,
+#     'pitch_range': 8,
+#     'pitch_viscosity': 4,
+#     'hook_chord_boost_onchord': 5.0,
+#     'hook_chord_boost_2_and_6': 0.5,
+#     'hook_chord_boost_7': 0.5,
+#     'hook_chord_boost_else': 0.0,
+#     'nonhook_chord_boost_onchord': 3,
+#     'nonhook_chord_boost_2_and_6': 1,
+#     'nonhook_chord_boost_7': 1,
+#     'nonhook_chord_boost_else': 0.5,
+#     'already_played_boost': 1.25,
+#     'matchability_noise': 0.1,
+#     'hmm_bias': 0.0
+# }
 
 data_input = json.loads(sys.stdin.read())
 
 # print(sys.stdin.read())
 
 chords = data_input['chords']
-rhythm = data_input['rhythm']
+flat_rhythm = data_input['rhythm']
 bars = len(chords)
 flutter = int(data_input['flutter'])
 pitch_range = int(data_input['pitch_range'])
@@ -51,6 +59,22 @@ nonhook_chord_boost_7 = float(data_input['nonhook_chord_boost_7'])
 nonhook_chord_boost_else = float(data_input['nonhook_chord_boost_else'])
 matchability_noise = float(data_input['matchability_noise'])
 already_played_boost = float(data_input['already_played_boost'])
+hmm_bias = float(data_input['hmm_bias'])
+
+rhythm = []
+temp_rhythm = []
+measure_sum = 0
+for i in range(len(flat_rhythm)):
+    if measure_sum < 4:
+        temp_rhythm.append(flat_rhythm[i])
+        measure_sum += flat_rhythm[i]
+    else:
+        rhythm.append(temp_rhythm)
+        temp_rhythm = [flat_rhythm[i]]
+        measure_sum = flat_rhythm[i]
+if len(temp_rhythm) > 0:
+    rhythm.append(temp_rhythm)
+
 
 def bar_graph(vec, note, chord):
 
@@ -179,7 +203,7 @@ def match_index(measure, chord):          # scored from 0 to 1
     score = 0
     for note in measure:
         score += chord_boost(note, chord) - 3
-    return 1 / (1 + math.pow(math.e, -score / flutter))
+    return 1 / (1 + math.pow(math.e, -score / len(measure)))
 
 def sanitize_note(markov_vector, last_note, chord, index):
     curr_note = last_note + (index - 7)
@@ -224,7 +248,7 @@ def chord_boost2(note, chord):
         return nonhook_chord_boost_7
     return nonhook_chord_boost_else
 
-def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note, notes_played):
+def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note, notes_played, note_len):
     markov_vector = [0] * 15
     for i in range(14):
         l = 7 + delta - i
@@ -235,12 +259,12 @@ def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note, note
             return [0]
         if (last_note + (l - 7) >= max_note - pitch_range or last_note + (l - 7) <= max_note) and (last_note + (l - 7) <= max_note or last_note + (l - 7) >= min_note):
             if l >= 0 and l < 14:
-                markov_vector[l] += 1024 * (((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (l - 7), chord)) * already_played_boost_factor(last_note + (l - 7), notes_played))
+                markov_vector[l] += 1024 * (note_len + 1) * (((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (l - 7), chord)) * already_played_boost_factor(last_note + (l - 7), notes_played))
                 sanitize_note(markov_vector, last_note, chord, l)
             #print("ACCEPTED:", last_note + (l-7), max_note)
         if (last_note + (h - 7) <= min_note + pitch_range or last_note + (l - 7) >= min_note) and (last_note + (h - 7) >= min_note or last_note + (h - 7) <= max_note):
             if h < 14 and h >= 0:
-                markov_vector[h] += 1024 * (((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (h - 7), chord)) * already_played_boost_factor(last_note + (h - 7), notes_played))
+                markov_vector[h] += 1024 * math.log2(note_len + 1) * (((1 / ((i+1)**pitch_viscosity)) * chord_boost2(last_note + (h - 7), chord)) * already_played_boost_factor(last_note + (h - 7), notes_played))
                 sanitize_note(markov_vector, last_note, chord, h)
             #print("ACCEPTED:", last_note + (h-7), min_note)
     '''if last_note % 7 == 5:      # F
@@ -251,6 +275,35 @@ def recalculate_markov_vector2(last_note, chord, delta, min_note, max_note, note
         markov_vector[7-3] = 0'''
     markov_vector[7] = 0
     return stochastize(markov_vector)
+
+model = None
+with open('Training/melodyhmm.doc', 'rb') as handle:
+    model = pickle.load(handle)
+
+def get_hmm_vector(datagram):
+    #print(model.predict([datagram]))
+    likely_final_state = model.predict([datagram])[-1]
+
+    counts = [0] * 15
+
+    for _ in range(20):
+        index = model.sample(1, random_state=random.randint(0, 2**8), currstate=likely_final_state)[0][0][0]
+        if index != 4096:
+            counts[index] += 1
+    if max(counts) == 0: return counts
+    return stochastize(counts)
+
+def avg_vectors(theory_vector, hmm_vector, hmm_bias):
+    if len(theory_vector) != len(hmm_vector):
+        print(len(theory_vector), len(hmm_vector))
+    assert(len(theory_vector) == len(hmm_vector))
+    avg_vector = []
+    for i in range(len(theory_vector)):
+        if theory_vector[i] == 0:
+            avg_vector.append(0)
+        else:
+            avg_vector.append(theory_vector[i] * (1 - hmm_bias) + hmm_vector[i] * hmm_bias)
+    return stochastize(avg_vector)
 
 
 #chords = [1, 5, 6, 4]
@@ -303,6 +356,8 @@ def loop():
     FLAT_NOTES = []
     x = []
 
+    note = 0
+
     for i in range(bars):
         last_note = keynotes[i]
         temp_notes = []
@@ -316,15 +371,21 @@ def loop():
             min_note = last_note
         if last_note > max_note or max_note == -4096:
             max_note = last_note
-        for j in range(flutter-1):
-            delta = round((keynotes[i+1] - last_note) / (flutter - j - 1))
+        measure_flutter = len(rhythm[i])
+        #print(measure_flutter)
+        for j in range(measure_flutter-1):
+            delta = round((keynotes[i+1] - last_note) / (measure_flutter - j - 1))
             #print(max_note, min_note)
-            markov_vector2 = recalculate_markov_vector2(last_note, chords[i], delta, min_note, max_note, notes_played)
+            markov_vector2 = recalculate_markov_vector2(last_note, chords[i], delta, min_note, max_note, notes_played, rhythm[i][j+1])
             #bar_graph(markov_vector2, last_note, chords[i])
             if len(markov_vector2) == 1:
                 loop()
                 return
-            index = choose_index(markov_vector2)
+            hmm_vector = get_hmm_vector(FLAT_NOTES)
+            if max(hmm_vector) == 0: hmm_vector = markov_vector2
+            choice_vector = avg_vectors(markov_vector2, hmm_vector, hmm_bias)
+            #index = choose_index(markov_vector2)
+            index = choose_index(choice_vector)
             last_note += (index - 7)
             temp_notes.append(last_note)
             FLAT_NOTES.append(last_note)
@@ -337,6 +398,7 @@ def loop():
                 max_note = last_note
         #                               print(out)
         measures.append(temp_notes)
+        note += 1
     
     # print(' '.join([str(x) for x in chords]), file=sys.stderr)
     # print(' '.join([str(x) for x in FLAT_NOTES]))
@@ -381,16 +443,20 @@ def set_repetitions():
     if forward_switch and not backward_switch:
         #print('measure 0 subbed into measure 2')
         measures[2] = measures[0]
+        rhythm[2] = rhythm[0]
     elif not forward_switch and backward_switch:
         #print('measure 2 subbed into measure 0')
         measures[0] = measures[2]
+        rhythm[0] = rhythm[2]
     elif forward_switch and backward_switch:
         if matches[0][0] + matches[0][2] > matches[2][0] + matches[2][2]:
             #print('measure 0 subbed into measure 2')
             measures[2] = measures[0]
+            rhythm[2] = rhythm[0]
         else:
             #print('measure 2 subbed into measure 0')
             measures[0] = measures[2]
+            rhythm[0] = rhythm[2]
     else:
         switch02 = False
 
@@ -407,16 +473,20 @@ def set_repetitions():
     if forward_switch and not backward_switch:
         #print('measure 1 subbed into measure 3')
         measures[3] = measures[1]
+        rhythm[3] = rhythm[1]
     elif not forward_switch and backward_switch:
         #print('measure 3 subbed into measure 1')
         measures[1] = measures[3]
+        rhythm[1] = rhythm[3]
     elif forward_switch and backward_switch:
         if matches[1][1] + matches[1][3] > matches[3][1] + matches[3][3]:
             #print('measure 1 subbed into measure 3')
             measures[3] = measures[1]
+            rhythm[3] = rhythm[1]
         else:
             #print('measure 3 subbed into measure 1')
             measures[1] = measures[3]
+            rhythm[1] = rhythm[3]
     else:
         switch13 = False
 
@@ -424,13 +494,17 @@ if bars == 4:
     set_repetitions()
 
 FLAT_NOTES = list(chain.from_iterable(measures))
+FLAT_RHYTHM = list(chain.from_iterable(rhythm))
 
 # data = {
 #     'chords': ' '.join([str(x) for x in chords]),
 #     'melody': ' '.join([vn(x) for x in FLAT_NOTES])
 # }
 
-melody = [[FLAT_NOTES[i], rhythm[i]] for i in range(len(FLAT_NOTES))]
+if len(FLAT_NOTES) != len(FLAT_RHYTHM):
+    print('notes:', len(FLAT_NOTES), file=sys.stderr)
+    print('rhythm:', len(FLAT_RHYTHM), file=sys.stderr)
+melody = [[FLAT_NOTES[i], FLAT_RHYTHM[i]] for i in range(len(FLAT_NOTES))]
 
 data = {
     'melody': melody

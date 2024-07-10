@@ -4,7 +4,7 @@
     <style>
 
 body {
-    font-family: sans-serif;
+    font-family: monospace;
     background-color: black;
     color: white;
 }
@@ -33,6 +33,10 @@ body {
 CHORD_COLORARRAY = [0, 0, 255];
 MELODY_COLORARRAY = [167, 40, 40];
 ARPEGGIO_COLORARRAY = [0, 127, 60];
+
+let chords = {{ chords }};
+let melody = {{ melody }};
+let arpeggio = {{ arpeggio }};
 
 function vn(val) {
     let conv = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
@@ -106,7 +110,9 @@ window.onload = function() {
     noteDiv{{i}}_{{j}}.style.left = (80 * {{ i }}) + 'px';
     noteDiv{{i}}_{{j}}.style.top = (30 * {{ -20 * i }}) + 'px';
     noteDiv{{i}}_{{j}}.style.width = '78px';
-    noteDiv{{i}}_{{j}}.style.borderColor = 'black';
+    noteDiv{{i}}_{{j}}.style.borderColor = 'rgb(144, 0, 67)';
+    //noteDiv{{i}}_{{j}}.style.borderColor = 'rgb(71, 255, 47)';
+    noteDiv{{i}}_{{j}}.style.backgroundColor = 'black';
     document.getElementById('dawArea').appendChild(noteDiv{{i}}_{{j}});
 {% endfor %}
 {% endfor %}
@@ -139,18 +145,35 @@ leftOffset = 0;
     </script>
     </head>
     <body>
-        <h1>Key = {{ key }} and Bars = {{ bars }}</h1>
+        <!--<h1>Key = {{ key }} and Bars = {{ bars }}</h1>-->
         <!--<p>Chords = {{ chords }}</p>
         <p>Melody = {{ melody }}</p>-->
     </body>
     <div id="dawArea">
     </div>
+    <button id="rhythm-regenerate">Regenerate Rhythm</button>
     <button id="melody-regenerate">Regenerate Melody</button>
+    <button id="arpeggio-regenerate">Regenerate Arpeggio</button>
     <button id="chords-regenerate">Regenerate Chords (will regenerate everything)</button>
-    <p id="response">Generated once</p>
+    <button id="save">Save to DB</button>
+    <p id="response" style="color:rgb(71, 255, 47)">Generated once</p>
 
     <script>
         $(document).ready(function(){
+            $("#rhythm-regenerate").click(function(){
+                $.ajax({
+                    url: '/regenerate/{"spec": "change-rhythm", "melody": {{ melody }}}', // URL to send the request to
+                    type: "GET",      // HTTP method to use for the request
+                    success: function(response) {
+                        $("#response").text(response);
+                        destroyTrack('melody');
+                        writeVoiceLine(JSON.parse(response).melody, MELODY_COLORARRAY, 'melody');
+                    },
+                    error: function(error) {
+                        console.log("Error:", error);
+                    }
+                });
+            })
             $("#melody-regenerate").click(function(){
                 $.ajax({
                     url: '/regenerate/{"spec": "change-melody", "chords": {{ chords }}, "rhythm": {{ rhythm }}}', // URL to send the request to
@@ -159,6 +182,20 @@ leftOffset = 0;
                         $("#response").text(response);
                         destroyTrack('melody');
                         writeVoiceLine(JSON.parse(response).melody, MELODY_COLORARRAY, 'melody');
+                    },
+                    error: function(error) {
+                        console.log("Error:", error);
+                    }
+                });
+            });
+            $("#arpeggio-regenerate").click(function(){
+                $.ajax({
+                    url: '/regenerate/{"spec": "change-arpeggio", "chords": {{ chords }}, "rhythm": {{ rhythm }}}', // URL to send the request to
+                    type: "GET",      // HTTP method to use for the request
+                    success: function(response) {
+                        $("#response").text(response);
+                        destroyTrack('arpeggio');
+                        //writeVoiceLine(JSON.parse(response).arpeggio, ARPEGGIO_COLORARRAY, 'arpeggio');
                     },
                     error: function(error) {
                         console.log("Error:", error);
@@ -175,6 +212,9 @@ leftOffset = 0;
                         destroyTrack('arpeggio');
                         destroyTrack('chord')
                         responseJSON = JSON.parse(response);
+                        chords = responseJSON.chords;
+                        arpeggio = responseJSON.arpeggio;
+                        melody = responseJSON.melody;
                         writeChords(responseJSON.chords, CHORD_COLORARRAY);
                         writeVoiceLine(responseJSON.arpeggio, ARPEGGIO_COLORARRAY, 'arpeggio');
                         writeVoiceLine(responseJSON.melody, MELODY_COLORARRAY, 'melody');
@@ -184,6 +224,19 @@ leftOffset = 0;
                         console.log("Error:", error);
                     }
                 });
+            })
+            $("#save").click(function(){
+                $.post(
+                    '/generate/key=0&bars=0', {
+                        chords: chords,
+                        melody: melody,
+                        arpeggio: arpeggio
+                    }, function(data, status) {
+                        if (status !== 'success') {
+                            alert(data + " -- " +status);
+                        }
+                    }
+                );
             })
         });
     </script>

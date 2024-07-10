@@ -50,9 +50,11 @@ def get_arpeggio(json_data):
     arpeggio_raw = get_voice_line(json_data)
     arpeggio_mid = [arpeggio_raw[i][0] for i in range(len(arpeggio_raw))]
     arpeggio_mid *= len(chords)
-    for i in range(len(chords)):
+    print(arpeggio_mid)
+    for i in range(len(chords) * 8):
         arpeggio_mid[i] += chords[i // 8] - chords[0]
-    arpeggio = [[arpeggio_mid[i], 0.5] for i in arpeggio_mid]
+    print(arpeggio_mid)
+    arpeggio = [[i, 0.5] for i in arpeggio_mid]
     return arpeggio
 
 def get_rhythm(json_data):
@@ -60,3 +62,27 @@ def get_rhythm(json_data):
     rhythm_stdout_data, _ = p.communicate(input=json.dumps(json_data))
     return json.loads(rhythm_stdout_data)['rhythm']
 
+# def get_rhythm():
+#     p = Popen(['python3', 'rhythm.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+#     rhythm_stdout_data, _ = p.communicate()
+#     return json.loads(rhythm_stdout_data)['rhythm']
+'''
+data_to_arpeggiator = {
+    'chords': [5, 3, 2, 6],
+    'flutter': 8,
+    'pitch_range': 12,
+    'pitch_viscosity': 0,
+    'hook_chord_boost_onchord': 5.0,
+    'hook_chord_boost_2_and_6': 0.5,
+    'hook_chord_boost_7': 0.5,
+    'hook_chord_boost_else': 0.0,
+    'nonhook_chord_boost_onchord': 5.0,
+    'nonhook_chord_boost_2_and_6': 0.5,
+    'nonhook_chord_boost_7': 0.5,
+    'nonhook_chord_boost_else': 0.0,
+    'already_played_boost': 0.01,
+    'matchability_noise': 0.2,
+    'hmm_bias': 0
+}
+
+print(get_arpeggio(data_to_arpeggiator))'''
