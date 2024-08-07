@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAW MIDI Notes</title>
+    <style>
+
+body {
+    background-color: black;
+    color: white;
+}
+
+.parent-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0px; /* Adjust the gap between the containers as needed */
+}
+
+.daw-container {
+    position: relative;
+    width: 200px;
+    height: 400px;
+    border: 2px solid #ccc;
+    background-color: #282828;
+    display: grid;
+    grid-template-columns: repeat(32, 1fr); /* Adjust as needed */
+    grid-template-rows: repeat(8, 1fr); /* Adjust as needed */
+    grid-gap: 1px;
+    background-size: 12.5px 25px;
+    background-image: 
+        linear-gradient(to right, #424242 1px, transparent 1px),
+        linear-gradient(to bottom, #424242 1px, transparent 1px);
+    background-attachment: local; /* This makes the background scroll with the content */
+    overflow-y: auto;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.daw-container::-webkit-scrollbar {
+    display: none;
+}
+
+.note {
+    position: absolute;
+    padding: 10px;
+    padding: 10px 0px 10px 0px;
+    border: 1px solid #fff;
+    background-color: #0d00ff;
+    cursor: move;
+    text-align: center;
+    user-select: none;
+    height: 4px; /* Adjust to match the grid row height */
+}
+
+.resize-handle {
+    width: 5px;
+    height: 100%;
+    background: #999;
+    position: absolute;
+    right: 0;
+    top: 0;
+    cursor: ew-resize;
+}
+
+.daw-container-notes .note {
+    background-color: black;
+    color: white;
+    padding-bottom: 10px;
+}
+
+    </style>
+</head>
+<body>
+    <div id="all-daws"></div>
+    <!-- <div id="daw-container">
+    </div> -->
+    <!-- <div id="parent-container">
+        <div id="daw-container-notes" class="daw-container" style="width:50px;"></div>
+    </div> -->
+    <button onclick="play()">Play</button>
+    <div style="position: absolute; right: 10px; top: 10px; width: 200px; height: 400px; background-color: purple;">
+        <p>Hide the following:</p>
+        <button onclick="hideToggle('melody')">melody</button>
+        <button onclick="hideToggle('arpeggio')">arpeggio</button>
+        <button onclick="hideToggle('chords')">chords</button>
+    </div>
+    <p id="melody"></p>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        
+
+function hideToggle(name) {
+    if (document.getElementById('parent-container-' + name).style.display == 'none') {
+        document.getElementById('parent-container-' + name).style.display = 'flex';
+    } else {
+        document.getElementById('parent-container-' + name).style.display = 'none';
+    }
+}
+
+function vn(val) {
+    let conv = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    append = (4 + Math.floor(val / 7));
+    note = val % 7;
+    if (note < 0) { note += 7; }
+    return "" + conv[note] + "" + append;
+}
+
+let currentDaw = null;
+let draggedNote = null;
+let resizeHandle = null;
+let startX, startY;
+let initialLeft, initialTop, initialWidth;
+let isDragging = false;
+let isResizing = false;
+let selectedNote = null;
+let dawContainers = {};
+let measures = {};
+//const dawContainers = [];
+
+let bars = {{ bars }};
+
+
+// let melody = [
+//     [0, 0, 1],
+//     [1, 1, 3],
+//     [3, 3, 8]
+// ];
+
+document.getElementById('melody').textContent = melody;
+
+function play() {
+    data = {
+        measures: measures,
+        velocities: {
+            'melody': parseInt(document.getElementById('melody-velocity').value),
+            'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
+            'chords': parseInt(document.getElementById('chords-velocity').value)
+        },
+        bpm: 120
+    }
+    console.log(data);
+    fetch('/play', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
+// const dawContainer = document.getElementById('daw-container');
+// <div id="daw-container-notes" class="daw-container" style="width:50px;"></div>
+
+function createNoteDiv(note, start, end, dawIndex, name) {
+    // Create the outer div
+    const noteDiv = document.createElement('div');
+    noteDiv.classList.add('note');
+    noteDiv.dataset.note = note;
+    noteDiv.dataset.start = start;
+    noteDiv.dataset.end = end;
+
+    // Create the inner resize handle div
+    const resizeHandleDiv = document.createElement('div');
+    resizeHandleDiv.classList.add('resize-handle');
+
+    // Append the resize handle to the outer div
+    noteDiv.appendChild(resizeHandleDiv);
+
+    // Append the note div to the container
+    dawContainers[name][dawIndex].appendChild(noteDiv);
+
+    // Add click event listener to change the color of the note
+    noteDiv.addEventListener('mousedown', (e) => {
+        // Prevent event propagation to avoid triggering mousedown event
+        //e.stopPropagation();
+
+        // Reset previously selected note color
+        if (selectedNote && selectedNote !== noteDiv) {
+            selectedNote.style.backgroundColor = '#0d00ff'; // Blue color
+        }
+
+        // Set current note as selected and change its color
+        selectedNote = noteDiv;
+        noteDiv.style.backgroundColor = '#800080'; // Purple color
+    });
+}
+
+// Add event listener for backspace key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace' && selectedNote) {
+        // Remove the selected note
+        let name = selectedNote.parentElement.name;
+        selectedNote.parentElement.removeChild(selectedNote);
+        selectedNote = null;
+
+        // Update the melody array
+        //alert(currentDaw);
+        updateMelodyArray(currentDaw, measures[name]);
+    }
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (isResizing && draggedNote) {
+        const deltaX = e.clientX - startX + 2.5;
+
+        // Prevent the width from going below a certain value (e.g., 1 beat)
+        const minWidth = 12.5 - 1;
+        let newWidth = Math.max(initialWidth + deltaX, minWidth) - 5 - 1;
+        document.getElementById('melody').textContent = newWidth;
+
+        // Calculate new end time based on resized width
+        const startTime = parseFloat(draggedNote.dataset.start);
+        const endTime = startTime + newWidth / 12.5; // Assuming 25px = 1.0 beat
+
+        // Snap to grid (round to nearest 0.25 beats)
+        const snappedEndTime = Math.round(endTime);
+
+        const maxWidth = currentDaw.clientWidth - parseFloat(draggedNote.style.left);
+        newWidth = (snappedEndTime - startTime) * 12.5 - 1;
+        newWidth = Math.min(newWidth, maxWidth);
+        const newSnappedEndTime = Math.round(startTime + (newWidth)/12.5);
+
+        // Update note width 
+        draggedNote.style.width = `${newWidth}px`;
+        draggedNote.dataset.end = parseInt(newSnappedEndTime);
+    } else if (isDragging && draggedNote) {
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        // Calculate new positions
+        let newLeft = initialLeft + deltaX;
+        let newTop = initialTop + deltaY;
+
+        // Snap to grid
+        const snappedLeft = Math.round(newLeft / 12.5) * 12.5;
+        const snappedTop = Math.round(newTop / 25) * 25;
+
+        // Calculate new start time based on drag position
+        const startTime = snappedLeft / 12.5; // Assuming 25px = 1.0 beat
+        const endTime = startTime + (parseFloat(draggedNote.dataset.end) - parseFloat(draggedNote.dataset.start));
+
+        // Snap to grid (round to nearest 0.25 beats)
+        const snappedStartTime = Math.round(startTime);
+        const snappedEndTime = Math.round(endTime);
+
+        const width = (snappedEndTime - snappedStartTime);
+        //alert(width);
+
+        // Calculate new note value based on vertical drag position
+        const noteValue = Math.round(snappedTop / 25); // Assuming 25px = 1 note
+
+        // Ensure the note stays within the container's boundaries
+        const maxLeft = currentDaw.clientWidth - draggedNote.offsetWidth;
+        const maxTop = 1000;
+
+        // Snap to grid (round to nearest note value)
+        const snappedNoteValue = Math.min(Math.max(0, Math.round(noteValue)), parseInt(Math.round(maxTop / 25)));
+
+        newLeft = Math.min(Math.max(snappedLeft, 0), maxLeft);
+        newTop = Math.min(Math.max(snappedTop, 0), maxTop);
+
+        // Update note position
+        draggedNote.style.left = `${newLeft}px`;
+        draggedNote.style.top = `${newTop}px`;
+        draggedNote.dataset.start = parseInt(Math.round(newLeft / 12.5));
+        draggedNote.dataset.end = parseInt((newLeft)/12.5 + width);
+        draggedNote.dataset.note = snappedNoteValue;
+    }
+});
+
+document.addEventListener('mouseup', (e) => {
+    if ((isDragging || isResizing) && selectedNote) {
+        // Update the melody array
+        let name = selectedNote.parentElement.name;
+        updateMelodyArray(currentDaw, measures[name]);
+        isDragging = false;
+        isResizing = false;
+        draggedNote = null;
+        //currentDaw = null;
+        resizeHandle = null;
+        e.preventDefault();
+    }
+});
+
+function updateMelodyArray(daw, track_measures) {
+    //alert(0);
+    const notes = daw.getElementsByClassName('note');
+    //melody = [];
+    temp_melody = [];
+    //alert(1);
+    for (const note of notes) {
+        const noteValue = parseInt(note.dataset.note);
+        const startTime = parseInt(note.dataset.start);
+        const endTime = parseInt(note.dataset.end);
+        temp_melody.push([noteValue, startTime, endTime]);
+    }
+    //alert(2);
+    const dawArr = daw.id.split("-")
+    const dawIndex = parseInt(dawArr[dawArr.length - 1]);
+    track_measures[dawIndex] = temp_melody;
+    //alert(3);
+    //console.log('Updated melody:' + melody);
+    document.getElementById('melody').textContent = temp_melody;
+    console.log(track_measures);
+    //alert(4);
+}
+
+function showNotes(track_measures, name) {
+    for (let i = 0; i < track_measures.length; i++) {
+        const notes = dawContainers[name][i].getElementsByClassName('note');
+        for (const note of notes) {
+            const noteValue = parseInt(note.dataset.note);
+            const startTime = parseInt(note.dataset.start);
+            const endTime = parseInt(note.dataset.end);
+            note.style.left = `${startTime * 12.5}px`;
+            note.style.top = `${noteValue * 25}px`;
+            note.style.width = `${(endTime - startTime) * 12.5 - 1}px`;
+            note.draggable = true;
+        }
+    }
+}
+
+function createTrack(rawMelody, name) {
+    if (name === 'chords') {
+        track_measures = [];
+        for (const note of rawMelody) {
+            track_measures.push([
+                [27 - (note + 1), 0, 16],
+                [27 - (note + 3), 0, 16],
+                [27 - (note + 5), 0, 16]
+            ]);
+        }
+
+        measures[name] = track_measures;
+        console.log(track_measures);
+    } else {
+        let melody = [];
+        let track_measures = [];
+        let measure_melody = [];
+        let leftOffset = 0;
+        for (const note of rawMelody) {
+            if (leftOffset % 16 == 0) {
+                if (measure_melody.length != 0) {
+                    track_measures.push(measure_melody);
+                }
+                measure_melody = [];
+            }
+            let start = leftOffset;
+            let end = leftOffset + note[1] * 4;
+            let rank = 20 - note[0];
+            melody.push([rank, start, end]);
+            measure_melody.push([rank, start % 16, (end - 1) % 16 + 1]);
+            leftOffset = end;
+        }
+        if (measure_melody.length != 0) {
+            track_measures.push(measure_melody);
+        }
+
+        measures[name] = track_measures;
+        console.log(track_measures);
+    }
+
+    const header = document.createElement('h1');
+    header.textContent = name;
+    document.getElementById('all-daws').appendChild(header);
+
+    const velocity = document.createElement('input');
+    velocity.id = name + '-velocity';
+    velocity.type = 'text';
+    velocity.value = 100;
+    document.getElementById('all-daws').appendChild(velocity);
+
+    const parentContainer = document.createElement('div');
+    parentContainer.id = 'parent-container-' + name;
+    parentContainer.classList.add('parent-container');
+    document.getElementById('all-daws').appendChild(parentContainer);
+
+    const dawContainerNotes = document.createElement('div');
+    dawContainerNotes.id = 'daw-container-' + name + '-notes';
+    dawContainerNotes.classList.add('daw-container');
+    dawContainerNotes.classList.add('daw-container-notes');
+    dawContainerNotes.style.width = '50px';
+    dawContainerNotes.draggable = false;
+    document.getElementById('parent-container-' + name).appendChild(dawContainerNotes);
+    dawContainers[name] = [];
+
+    for (let i = 0; i < bars; i++) {
+        const dawContainer = document.createElement('div');
+        dawContainer.id = 'daw-container-' + name + '-' + i;
+        dawContainer.classList.add('daw-container');
+        dawContainer.name = name;
+        document.getElementById('parent-container-' + name).appendChild(dawContainer);
+        dawContainers[name].push(document.getElementById('daw-container-' + name + '-' + i));
+        const noteDiv = document.createElement('div');
+        noteDiv.classList.add('note');
+        noteDiv.dataset.note = 40;
+        noteDiv.dataset.start = 0;
+        noteDiv.dataset.end = 0;
+        noteDiv.style.visibility = 'hidden';
+        noteDiv.style.left = '0px';
+        noteDiv.style.top = '975px';
+        noteDiv.style.width = '50px';
+        document.getElementById('daw-container-' + name + '-' + i).appendChild(noteDiv);
+    }
+
+    for (let i = 0; i < 41; i++) {
+        const noteDiv = document.createElement('div');
+        noteDiv.classList.add('note');
+        noteDiv.dataset.note = i;
+        noteDiv.dataset.start = 0;
+        noteDiv.dataset.end = 2;
+        noteDiv.style.left = '0px';
+        noteDiv.style.top = (25 * i) + 'px';
+        noteDiv.style.width = '50px';
+        const span = document.createElement('span');
+        span.style.position = 'absolute';
+        span.style.top = '2px';
+        span.style.left = '16px';
+        span.textContent = vn(20 - i) + '';
+        noteDiv.appendChild(span);
+        document.getElementById('daw-container-' + name + '-' + 'notes').appendChild(noteDiv);
+    }
+
+    for (let i = 0; i < measures[name].length; i++) {
+        for (const note of measures[name][i]) {
+            createNoteDiv(note[0], note[1], note[2], i, name);
+        }
+    }
+
+    let dawClassContainers = document.getElementsByClassName('daw-container');
+    $('.daw-container').scroll(function() {
+        for (let i in dawClassContainers) {
+            if (dawClassContainers[i].id.includes(name)) {
+                $(dawClassContainers[i]).scrollTop($(this).scrollTop());
+            }
+        }
+    });
+
+    showNotes(measures[name], name);
+
+    for (let i = 0; i < bars; i++) {
+        dawContainers[name][i].addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('resize-handle')) {
+                isResizing = true;
+                resizeHandle = e.target;
+                draggedNote = resizeHandle.parentElement;
+                currentDaw = draggedNote.parentElement;
+                startX = e.clientX;
+                initialWidth = draggedNote.offsetWidth;
+                e.preventDefault();
+            } else if (e.target.classList.contains('note')) {
+                isDragging = true;
+                draggedNote = e.target;
+                currentDaw = draggedNote.parentElement;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = parseFloat(draggedNote.style.left) || 0;
+                initialTop = parseFloat(draggedNote.style.top) || 0;
+                e.preventDefault();
+            } else {
+                // Add a new note
+                const dawRect = e.currentTarget.getBoundingClientRect();
+                const clickedX = e.clientX - dawRect.left + e.currentTarget.scrollLeft;
+                const clickedY = e.clientY - dawRect.top + e.currentTarget.scrollTop;
+
+                // Snap to grid
+                const snappedLeft = Math.floor(clickedX / 12.5) * 12.5;
+                const snappedTop = Math.floor(clickedY / 25) * 25;
+
+                // Create a new note of length 2 (snapped to grid)
+                const noteValue = Math.round(snappedTop / 25);
+                const startTime = snappedLeft / 12.5;
+                const endTime = startTime + 2;
+
+                createNoteDiv(noteValue, startTime, endTime, i, name);
+                updateMelodyArray(e.currentTarget, measures[name]);
+                showNotes(measures[name], name);
+
+                e.preventDefault();
+            }
+        });
+    }
+}
+
+createTrack({{ melody }}, 'melody');
+createTrack({{ arpeggio }}, 'arpeggio');
+createTrack({{ chords }}, 'chords');
+//createTrack(measures, 'arpeggio');
+//createTrack(measures, 'chords');
+
+let dawClassNoteContainers = document.getElementsByClassName('daw-container-notes');
+for (let i in dawClassNoteContainers) {
+    $(dawClassNoteContainers[i]).scrollTop(350);
+}
+//createTrack(measures);
+
+    </script>
+</body>
+</html>

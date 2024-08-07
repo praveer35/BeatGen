@@ -2,6 +2,9 @@ from flask import Flask, render_template, request
 import os
 import subprocess
 from subprocess import Popen, PIPE
+import math
+import asyncio
+import fluidsynth
 
 import json
 import pty
@@ -15,10 +18,116 @@ app = Flask(__name__)
 
 #def get_response(filename):
 
+def vn(val):
+    conv = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+    append = (4 + math.floor(val / 7))
+    note = val % 7
+    return str(conv[note]) + str(append)
 
 @app.route('/')
 def home():
     return render_template('index.html')
+
+@app.route('/play', methods=['POST'])
+def play():
+    measures = request.json['measures']
+    print(type(measures))
+    if type(measures) == str:
+        measures = json.loads(measures)
+    velocities = request.json['velocities']
+    bpm = request.json['bpm']
+    channel_velocities = []
+    tracks = []
+    # flat_melody = []
+    # for measure in melody:
+    #     for note in measure:
+    #         flat_melody.append([20 - note[0], note[1], note[2]])
+    # arpeggio = measures['arpeggio']
+    # flat_arpeggio = []
+    # for measure in arpeggio:
+    #     for note in measure:
+    #         flat_arpeggio.append([20 - note[0], note[1], note[2]])
+    # chords = measures['chords']
+    # flat_chords = []
+    # for measure in chords:
+    #     for note in measure:
+    #         flat_chords.append([20 - note[0], note[1], note[2]])
+    for key in measures.keys():
+        synth_track = lib.synth_convert(measures[key])
+        channel_velocities.append(velocities[key])
+        tracks.append(synth_track)
+    # synth_melody = lib.synth_convert(measures['melody'])
+    # velocity_dict[synth_melody] = velocities['melody']
+    # synth_chords = lib.synth_convert(measures['chords'])
+    # velocity_dict[synth_chords] = velocities['chords']
+    # synth_arpeggio = lib.synth_convert(measures['arpeggio'])
+    # velocity_dict[synth_arpeggio] = velocities['arpeggio']
+    # synth_arpeggio = lib.synth_convert(flat_arpeggio)
+    # synth_chords = lib.synth_convert(flat_chords)
+    print(tracks[0])
+    # tracks = [
+    #     synth_melody,
+    #     synth_chords,
+    #     synth_arpeggio
+    #     # synth_arpeggio,
+    #     # synth_chords
+    # ]
+    soundfont = "Yamaha_C3_Grand_Piano.sf2"
+    synth = fluidsynth.Synth()
+    #synth.delete()
+    synth.start()
+    print('synth started')
+    sfid = synth.sfload(soundfont)
+
+    # Select program for each channel
+    for channel in range(len(tracks)):
+        synth.program_select(channel, sfid, 0, 0)
+
+    async def play_note_on_channel(synth, note, start_time, end_time, channel):
+        await asyncio.sleep(start_time * 60 / bpm)
+        synth.noteon(channel, note, channel_velocities[channel])
+        await asyncio.sleep((end_time - start_time) * 60 / bpm)
+        synth.noteoff(channel, note)
+
+    async def play_track(synth, track, channel):
+        tasks = [play_note_on_channel(synth, note, start_time, end_time, channel) for note, start_time, end_time in track]
+        await asyncio.gather(*tasks)
+
+    async def main_player():
+        tasks = [play_track(synth, track, channel) for channel, track in enumerate(tracks)]
+        await asyncio.gather(*tasks)
+        synth.delete()
+
+    # Run the main function
+    asyncio.run(main_player())
+    # sfid = synth.sfload(soundfont)
+    # for channel in range(len(tracks) + 1):
+    #     synth.program_select(channel, sfid, 0, 0)
+    # async def play_track(synth, track, channel):
+    #     for note, start_time, duration in track:
+    #         await asyncio.sleep(start_time * 60/bpm)
+    #         synth.noteon(channel, note, 100 if track == synth_melody else 0)
+    #         await asyncio.sleep(duration * 60/bpm)
+    #         synth.noteoff(channel, note)
+    # async def play_chords(synth, chords):
+    #     i = 0
+    #     while i < len(chords):
+    #         print('playing chord')
+    #         synth.noteon(1, chords[i][0], 100)
+    #         synth.noteon(1, chords[i+1][0], 100)
+    #         synth.noteon(1, chords[i+2][0], 100)
+    #         await asyncio.sleep(4 * 60/bpm)
+    #         synth.noteoff(1, chords[i][0])
+    #         synth.noteoff(1, chords[i+1][0])
+    #         synth.noteoff(1, chords[i+2][0])
+    #         i += 3
+    # async def main_player():
+    #     tasks = [play_track(synth, track, channel) for channel, track in enumerate(tracks)]
+    #     tasks.append(play_chords(synth, synth_chords))
+    #     await asyncio.gather(*tasks)
+    #     synth.delete()
+    # asyncio.run(main_player())
+    return json.dumps({'data': 'success'})
 
 @app.route('/generate/key=<key>&bars=<bars>', methods=['GET', 'POST'])
 def generate(key, bars):
@@ -78,7 +187,7 @@ def generate(key, bars):
         arpeggio = lib.get_arpeggio(data_to_arpeggiator)
         print('arpeggio:', arpeggio)
 
-        return render_template('generate.html', len=len(melody), melody=melody, rhythm=rhythm, arpeggio=arpeggio, chords=chords, key=key, bars=len(chords))
+        return render_template('new-generate.html', len=len(melody), melody=melody, rhythm=rhythm, arpeggio=arpeggio, chords=chords, key=key, bars=len(chords), vn=vn)
     elif request.method == 'POST':
         print(request.data)
         try:

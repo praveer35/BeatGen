@@ -41,7 +41,10 @@ def get_voice_line(json_data):
     p = Popen(['python3', 'voice_line.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
     melody_stdout_data, err = p.communicate(input=json.dumps(json_data))
     if err: print('VOICE_LINE_ERR:', err)
-    return json.loads(melody_stdout_data)['melody']
+    try:
+        return json.loads(melody_stdout_data)['melody']
+    except:
+        return get_voice_line(json_data)
 
 def get_arpeggio(json_data):
     chords = json_data['chords']
@@ -61,6 +64,19 @@ def get_rhythm(json_data):
     p = Popen(['python3', 'rhythm.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
     rhythm_stdout_data, _ = p.communicate(input=json.dumps(json_data))
     return json.loads(rhythm_stdout_data)['rhythm']
+
+def synth_convert(measures):
+    synth_melody = []
+    c_scale_intervals = [0, 2, 3, 5, 7, 8, 10]
+    for i in range(len(measures)):
+        for note in measures[i]:
+            note[0] = 20 - note[0]
+            #print(note)
+            synth_note = 57 + (note[0] // 7) * 12 + c_scale_intervals[note[0] % 7]
+            duration = (note[2] - note[1]) / 4
+            if duration > 0:
+                synth_melody.append((synth_note, 4 * i + note[1] / 4, 4 * i + note[2] / 4))
+    return synth_melody
 
 # def get_rhythm():
 #     p = Popen(['python3', 'rhythm.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
