@@ -266,6 +266,7 @@ document.addEventListener('mousemove', (e) => {
     } else if (isDragging && draggedNote) {
         const deltaX = e.clientX - startX;
         const deltaY = e.clientY - startY;
+        const width = draggedNote.dataset.end - draggedNote.dataset.start;
 
         // Calculate new positions
         let newLeft = initialLeft + deltaX;
@@ -283,8 +284,7 @@ document.addEventListener('mousemove', (e) => {
         const snappedStartTime = Math.round(startTime);
         const snappedEndTime = Math.round(endTime);
 
-        const width = (snappedEndTime - snappedStartTime);
-        //alert(width);
+        //const width = (snappedEndTime - snappedStartTime);
 
         // Calculate new note value based on vertical drag position
         const noteValue = Math.round(snappedTop / 25); // Assuming 25px = 1 note
@@ -303,7 +303,7 @@ document.addEventListener('mousemove', (e) => {
         draggedNote.style.left = `${newLeft}px`;
         draggedNote.style.top = `${newTop}px`;
         draggedNote.dataset.start = parseInt(Math.round(newLeft / 12.5));
-        draggedNote.dataset.end = parseInt((newLeft)/12.5 + width);
+        draggedNote.dataset.end = parseInt(Math.round(newLeft / 12.5) + width);
         draggedNote.dataset.note = snappedNoteValue;
     }
 });

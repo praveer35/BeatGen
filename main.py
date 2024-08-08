@@ -33,7 +33,6 @@ def init_db():
                       )''')
     conn.commit()
     conn.close()
-    print('does it ever reach here?')
 
 @app.route('/')
 def home():
@@ -135,7 +134,8 @@ def play():
     for key in measures.keys():
         synth_track = lib.synth_convert(measures[key])
         channel_velocities.append(velocities[key])
-        tracks.append(synth_track)
+        if key == 'chords':
+            tracks.append(synth_track)
     # synth_melody = lib.synth_convert(measures['melody'])
     # velocity_dict[synth_melody] = velocities['melody']
     # synth_chords = lib.synth_convert(measures['chords'])
