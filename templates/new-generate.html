@@ -407,7 +407,7 @@ function createTrack(rawMelody, name) {
     const velocity = document.createElement('input');
     velocity.id = name + '-velocity';
     velocity.type = 'text';
-    velocity.value = 100;
+    velocity.value = (name == 'arpeggio') ? 50 : 100;
     document.getElementById('all-daws').appendChild(velocity);
 
     const parentContainer = document.createElement('div');
