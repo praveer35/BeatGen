@@ -1,6 +1,7 @@
 import os
 import pty
 import json
+import math
 from subprocess import Popen, PIPE
 
 def get_chords(key, bars):
@@ -77,6 +78,12 @@ def synth_convert(measures):
             if duration > 0:
                 synth_melody.append((synth_note, 4 * i + note[1] / 4, 4 * i + note[2] / 4))
     return synth_melody
+
+def vn(val):
+    conv = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+    append = (4 + math.floor(val / 7))
+    note = val % 7
+    return str(conv[note]) + str(append)
 
 # def get_rhythm():
 #     p = Popen(['python3', 'rhythm.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)

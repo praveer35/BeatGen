@@ -8,20 +8,20 @@ import json
 from itertools import chain
 
 import numpy as np
-os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
-import matplotlib.pyplot as plt
+#os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
+# import matplotlib.pyplot as plt
 
-def bar_graph(vec, note, chord):
+# def bar_graph(vec, note, chord):
 
-    notes = []
+#     notes = []
 
-    for i in range(len(vec)):
-        notes.append(vn(note + i - 7))
+#     for i in range(len(vec)):
+#         notes.append(vn(note + i - 7))
     
-    fig, ax = plt.figure(figsize=(10, 5)), plt.gca()
-    ax.bar(notes, vec, color='black', width=0.75)
-    ax.set_title(vn(note) + ", chord=" + str(chord))
-    plt.show()
+#     fig, ax = plt.figure(figsize=(10, 5)), plt.gca()
+#     ax.bar(notes, vec, color='black', width=0.75)
+#     ax.set_title(vn(note) + ", chord=" + str(chord))
+#     plt.show()
 
 
 exit = 1

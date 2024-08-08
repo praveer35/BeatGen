@@ -14,8 +14,8 @@ import lib
 from itertools import chain
 
 import numpy as np
-os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
-import matplotlib.pyplot as plt
+#os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
+#import matplotlib.pyplot as plt
 
 #time.sleep(2)
 
@@ -46,7 +46,6 @@ data_input = json.loads(sys.stdin.read())
 chords = data_input['chords']
 flat_rhythm = data_input['rhythm']
 bars = len(chords)
-flutter = int(data_input['flutter'])
 pitch_range = int(data_input['pitch_range'])
 pitch_viscosity = int(data_input['pitch_viscosity'])
 hook_chord_boost_onchord = float(data_input['hook_chord_boost_onchord'])
@@ -76,17 +75,17 @@ if len(temp_rhythm) > 0:
     rhythm.append(temp_rhythm)
 
 
-def bar_graph(vec, note, chord):
+# def bar_graph(vec, note, chord):
 
-    notes = []
+#     notes = []
 
-    for i in range(len(vec)):
-        notes.append(vn(note + i - 7))
+#     for i in range(len(vec)):
+#         notes.append(vn(note + i - 7))
     
-    fig, ax = plt.figure(figsize=(10, 5)), plt.gca()
-    ax.bar(notes, vec, color='black', width=0.75)
-    ax.set_title(vn(note) + ", chord=" + str(chord))
-    plt.show()
+#     fig, ax = plt.figure(figsize=(10, 5)), plt.gca()
+#     ax.bar(notes, vec, color='black', width=0.75)
+#     ax.set_title(vn(note) + ", chord=" + str(chord))
+#     plt.show()
 
 
 exit = 1

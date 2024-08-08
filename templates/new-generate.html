@@ -7,6 +7,7 @@
     <style>
 
 body {
+    font-family: monospace;
     background-color: black;
     color: white;
 }
@@ -78,12 +79,15 @@ body {
     <!-- <div id="parent-container">
         <div id="daw-container-notes" class="daw-container" style="width:50px;"></div>
     </div> -->
-    <button onclick="play()">Play</button>
     <div style="position: absolute; right: 10px; top: 10px; width: 200px; height: 400px; background-color: purple;">
         <p>Hide the following:</p>
         <button onclick="hideToggle('melody')">melody</button>
         <button onclick="hideToggle('arpeggio')">arpeggio</button>
         <button onclick="hideToggle('chords')">chords</button>
+        <p>Play:</p>
+        <button onclick="play()">Play</button>
+        <p>Save:</p>
+        <button onclick="save()">Save</button>
     </div>
     <p id="melody"></p>
 
@@ -142,6 +146,33 @@ function play() {
     }
     console.log(data);
     fetch('/play', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
+function save() {
+    data = {
+        measures: measures,
+        velocities: {
+            'melody': parseInt(document.getElementById('melody-velocity').value),
+            'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
+            'chords': parseInt(document.getElementById('chords-velocity').value)
+        },
+        bpm: 120
+    }
+    console.log(data);
+    fetch('/save', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

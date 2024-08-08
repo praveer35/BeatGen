@@ -1,7 +1,5 @@
-<!DOCTYPE html>
-<html>
-    <body>
-        <h1>Music Generator</h1>
-        <a href="{{ url_for('generate', key=1, bars=4) }}">Generate</a>
-    </body>
-</html>
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1>Welcome, {{ username }}!</h1>
+{% endblock %}

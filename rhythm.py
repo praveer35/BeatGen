@@ -9,8 +9,8 @@ from itertools import chain
 
 import numpy as np
 import pickle
-os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
-import matplotlib.pyplot as plt
+# os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
+# import matplotlib.pyplot as plt
 
 data_input = json.loads(input())
 notes = data_input['notes']
