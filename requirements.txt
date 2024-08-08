@@ -3,3 +3,4 @@ Werkzeug==3.0.3
 midiutil==1.2.1
 numpy==2.0.1
 pygame==2.6.0
+hmmlearn==2.6.0
