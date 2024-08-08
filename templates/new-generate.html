@@ -152,12 +152,19 @@ function play() {
         },
         body: JSON.stringify(data),
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Success:', data);
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok.');
+        }
+        return response.blob(); // Convert the response to a Blob
     })
-    .catch((error) => {
-        console.error('Error:', error);
+    .then(blob => {
+        const audioUrl = URL.createObjectURL(blob); // Create a URL for the Blob
+        const audio = new Audio(audioUrl); // Create an Audio object with the URL
+        audio.play(); // Play the audio
+    })
+    .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
     });
 }
 
@@ -179,9 +186,22 @@ function save() {
         },
         body: JSON.stringify(data),
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Success:', data);
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok.');
+        }
+        return response.blob(); // Get the response as a Blob
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob); // Create a URL for the Blob
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'output.mid'; // Set the desired filename
+        document.body.appendChild(a);
+        alert(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url); // Clean up
     })
     .catch((error) => {
         console.error('Error:', error);
@@ -407,7 +427,7 @@ function createTrack(rawMelody, name) {
     const velocity = document.createElement('input');
     velocity.id = name + '-velocity';
     velocity.type = 'text';
-    velocity.value = (name == 'arpeggio') ? 50 : 100;
+    velocity.value = (name == 'arpeggio') ? 0 : 100;
     document.getElementById('all-daws').appendChild(velocity);
 
     const parentContainer = document.createElement('div');

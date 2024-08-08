@@ -7,7 +7,10 @@ import math
 import asyncio
 from midiutil import MIDIFile
 import sqlite3
-import pygame
+#import pygame
+import pretty_midi
+import numpy as np
+from scipy.io.wavfile import write
 
 import json
 import pty
@@ -139,20 +142,28 @@ def play():
     # Write the MIDI file to disk
     with open("output.mid", "wb") as output_file:
         midi.writeFile(output_file)
+    
+    midi_data = pretty_midi.PrettyMIDI('output.mid')
+    audio_data = midi_data.synthesize()
+    sample_rate = 44100
+    audio_data = np.int16(audio_data / np.max(np.abs(audio_data)) * 32767)
+    write('output.wav', sample_rate, audio_data)
+    print(f"Converted output.mid to output.wav")
 
     # Initialize pygame mixer
-    pygame.init()
-    pygame.mixer.init()
+    #pygame.init()
+    #pygame.mixer.init()
 
     # Load and play the MIDI file
-    pygame.mixer.music.load('output.mid')
+    #pygame.mixer.music.load('output.mid')
     os.remove('output.mid')
-    pygame.mixer.music.play()
+    #pygame.mixer.music.play()
 
-    while pygame.mixer.music.get_busy():
-        pygame.time.Clock().tick(10)
+    #while pygame.mixer.music.get_busy():
+    #    pygame.time.Clock().tick(10)
     # Run the main function
-    return json.dumps({'data': 'success'})
+    return send_file('output.wav', mimetype='audio/wav', as_attachment=True)
+    #return json.dumps({'data': 'success'})
 
 @app.route('/save', methods=['POST'])
 def save():
@@ -191,7 +202,7 @@ def save():
         midi.writeFile(output_file)
 
     print("MIDI file has been created and saved as 'output.mid'.")
-    return send_file('output.mid', as_attachment=True)
+    return send_file('output.mid', as_attachment=True, download_name='output.mid')
 
 @app.route('/generate', methods=['POST'])
 def generate():
