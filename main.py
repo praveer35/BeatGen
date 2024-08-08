@@ -461,4 +461,4 @@ if __name__ == '__main__':
     init_db()
     pid = os.fork()
     os.execvp("g++", ["g++", "-std=c++11", "MusicGenerator.cpp"]) if pid == 0 else os.waitpid(pid, 0)
-    app.run(host='0.0.0.0', port=1601)
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 1601)))
