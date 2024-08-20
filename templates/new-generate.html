@@ -15,7 +15,7 @@ body {
 .parent-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 0px; /* Adjust the gap between the containers as needed */
+    gap: 0px;
 }
 
 .daw-container {
@@ -25,14 +25,14 @@ body {
     border: 2px solid #ccc;
     background-color: #282828;
     display: grid;
-    grid-template-columns: repeat(32, 1fr); /* Adjust as needed */
-    grid-template-rows: repeat(8, 1fr); /* Adjust as needed */
+    grid-template-columns: repeat(32, 1fr);
+    grid-template-rows: repeat(8, 1fr);
     grid-gap: 1px;
     background-size: 12.5px 25px;
     background-image: 
         linear-gradient(to right, #424242 1px, transparent 1px),
         linear-gradient(to bottom, #424242 1px, transparent 1px);
-    background-attachment: local; /* This makes the background scroll with the content */
+    background-attachment: local;
     overflow-y: auto;
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
@@ -51,7 +51,7 @@ body {
     cursor: move;
     text-align: center;
     user-select: none;
-    height: 4px; /* Adjust to match the grid row height */
+    height: 4px;
 }
 
 .resize-handle {
@@ -84,6 +84,7 @@ body {
         <button onclick="hideToggle('melody')">melody</button>
         <button onclick="hideToggle('arpeggio')">arpeggio</button>
         <button onclick="hideToggle('chords')">chords</button>
+        <p>BPM: <input id="bpm" type="text" value="120"></p>
         <p>Play:</p>
         <button onclick="play()">Play</button>
         <p>Save:</p>
@@ -142,7 +143,7 @@ function play() {
             'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
             'chords': parseInt(document.getElementById('chords-velocity').value)
         },
-        bpm: 120
+        bpm: parseInt(document.getElementById('bpm').value)
     }
     console.log(data);
     fetch('/play', {
@@ -156,12 +157,12 @@ function play() {
         if (!response.ok) {
             throw new Error('Network response was not ok.');
         }
-        return response.blob(); // Convert the response to a Blob
+        return response.blob();
     })
     .then(blob => {
-        const audioUrl = URL.createObjectURL(blob); // Create a URL for the Blob
-        const audio = new Audio(audioUrl); // Create an Audio object with the URL
-        audio.play(); // Play the audio
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audio.play();
     })
     .catch(error => {
         console.error('There was a problem with the fetch operation:', error);
@@ -190,18 +191,18 @@ function save() {
         if (!response.ok) {
             throw new Error('Network response was not ok.');
         }
-        return response.blob(); // Get the response as a Blob
+        return response.blob();
     })
     .then(blob => {
-        const url = window.URL.createObjectURL(blob); // Create a URL for the Blob
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'output.mid'; // Set the desired filename
+        a.download = 'output.mid';
         document.body.appendChild(a);
-        alert(a);
+        //alert(a);
         a.click();
         a.remove();
-        window.URL.revokeObjectURL(url); // Clean up
+        window.URL.revokeObjectURL(url);
     })
     .catch((error) => {
         console.error('Error:', error);
@@ -212,48 +213,37 @@ function save() {
 // <div id="daw-container-notes" class="daw-container" style="width:50px;"></div>
 
 function createNoteDiv(note, start, end, dawIndex, name) {
-    // Create the outer div
     const noteDiv = document.createElement('div');
     noteDiv.classList.add('note');
     noteDiv.dataset.note = note;
     noteDiv.dataset.start = start;
     noteDiv.dataset.end = end;
 
-    // Create the inner resize handle div
     const resizeHandleDiv = document.createElement('div');
     resizeHandleDiv.classList.add('resize-handle');
 
-    // Append the resize handle to the outer div
     noteDiv.appendChild(resizeHandleDiv);
 
-    // Append the note div to the container
     dawContainers[name][dawIndex].appendChild(noteDiv);
 
-    // Add click event listener to change the color of the note
     noteDiv.addEventListener('mousedown', (e) => {
-        // Prevent event propagation to avoid triggering mousedown event
         //e.stopPropagation();
 
-        // Reset previously selected note color
         if (selectedNote && selectedNote !== noteDiv) {
             selectedNote.style.backgroundColor = '#0d00ff'; // Blue color
         }
 
-        // Set current note as selected and change its color
         selectedNote = noteDiv;
         noteDiv.style.backgroundColor = '#800080'; // Purple color
     });
 }
 
-// Add event listener for backspace key
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Backspace' && selectedNote) {
-        // Remove the selected note
         let name = selectedNote.parentElement.name;
         selectedNote.parentElement.removeChild(selectedNote);
         selectedNote = null;
 
-        // Update the melody array
         //alert(currentDaw);
         updateMelodyArray(currentDaw, measures[name]);
     }
@@ -263,16 +253,13 @@ document.addEventListener('mousemove', (e) => {
     if (isResizing && draggedNote) {
         const deltaX = e.clientX - startX + 2.5;
 
-        // Prevent the width from going below a certain value (e.g., 1 beat)
         const minWidth = 12.5 - 1;
         let newWidth = Math.max(initialWidth + deltaX, minWidth) - 5 - 1;
         document.getElementById('melody').textContent = newWidth;
 
-        // Calculate new end time based on resized width
         const startTime = parseFloat(draggedNote.dataset.start);
         const endTime = startTime + newWidth / 12.5; // Assuming 25px = 1.0 beat
 
-        // Snap to grid (round to nearest 0.25 beats)
         const snappedEndTime = Math.round(endTime);
 
         const maxWidth = currentDaw.clientWidth - parseFloat(draggedNote.style.left);
@@ -280,7 +267,6 @@ document.addEventListener('mousemove', (e) => {
         newWidth = Math.min(newWidth, maxWidth);
         const newSnappedEndTime = Math.round(startTime + (newWidth)/12.5);
 
-        // Update note width 
         draggedNote.style.width = `${newWidth}px`;
         draggedNote.dataset.end = parseInt(newSnappedEndTime);
     } else if (isDragging && draggedNote) {
@@ -288,38 +274,30 @@ document.addEventListener('mousemove', (e) => {
         const deltaY = e.clientY - startY;
         const width = draggedNote.dataset.end - draggedNote.dataset.start;
 
-        // Calculate new positions
         let newLeft = initialLeft + deltaX;
         let newTop = initialTop + deltaY;
 
-        // Snap to grid
         const snappedLeft = Math.round(newLeft / 12.5) * 12.5;
         const snappedTop = Math.round(newTop / 25) * 25;
 
-        // Calculate new start time based on drag position
         const startTime = snappedLeft / 12.5; // Assuming 25px = 1.0 beat
         const endTime = startTime + (parseFloat(draggedNote.dataset.end) - parseFloat(draggedNote.dataset.start));
 
-        // Snap to grid (round to nearest 0.25 beats)
         const snappedStartTime = Math.round(startTime);
         const snappedEndTime = Math.round(endTime);
 
         //const width = (snappedEndTime - snappedStartTime);
 
-        // Calculate new note value based on vertical drag position
         const noteValue = Math.round(snappedTop / 25); // Assuming 25px = 1 note
 
-        // Ensure the note stays within the container's boundaries
         const maxLeft = currentDaw.clientWidth - draggedNote.offsetWidth;
         const maxTop = 1000;
 
-        // Snap to grid (round to nearest note value)
         const snappedNoteValue = Math.min(Math.max(0, Math.round(noteValue)), parseInt(Math.round(maxTop / 25)));
 
         newLeft = Math.min(Math.max(snappedLeft, 0), maxLeft);
         newTop = Math.min(Math.max(snappedTop, 0), maxTop);
 
-        // Update note position
         draggedNote.style.left = `${newLeft}px`;
         draggedNote.style.top = `${newTop}px`;
         draggedNote.dataset.start = parseInt(Math.round(newLeft / 12.5));
@@ -330,7 +308,6 @@ document.addEventListener('mousemove', (e) => {
 
 document.addEventListener('mouseup', (e) => {
     if ((isDragging || isResizing) && selectedNote) {
-        // Update the melody array
         let name = selectedNote.parentElement.name;
         updateMelodyArray(currentDaw, measures[name]);
         isDragging = false;
@@ -343,26 +320,21 @@ document.addEventListener('mouseup', (e) => {
 });
 
 function updateMelodyArray(daw, track_measures) {
-    //alert(0);
     const notes = daw.getElementsByClassName('note');
     //melody = [];
     temp_melody = [];
-    //alert(1);
     for (const note of notes) {
         const noteValue = parseInt(note.dataset.note);
         const startTime = parseInt(note.dataset.start);
         const endTime = parseInt(note.dataset.end);
         temp_melody.push([noteValue, startTime, endTime]);
     }
-    //alert(2);
     const dawArr = daw.id.split("-")
     const dawIndex = parseInt(dawArr[dawArr.length - 1]);
     track_measures[dawIndex] = temp_melody;
-    //alert(3);
     //console.log('Updated melody:' + melody);
     document.getElementById('melody').textContent = temp_melody;
     console.log(track_measures);
-    //alert(4);
 }
 
 function showNotes(track_measures, name) {
@@ -518,16 +490,13 @@ function createTrack(rawMelody, name) {
                 initialTop = parseFloat(draggedNote.style.top) || 0;
                 e.preventDefault();
             } else {
-                // Add a new note
                 const dawRect = e.currentTarget.getBoundingClientRect();
                 const clickedX = e.clientX - dawRect.left + e.currentTarget.scrollLeft;
                 const clickedY = e.clientY - dawRect.top + e.currentTarget.scrollTop;
 
-                // Snap to grid
                 const snappedLeft = Math.floor(clickedX / 12.5) * 12.5;
                 const snappedTop = Math.floor(clickedY / 25) * 25;
 
-                // Create a new note of length 2 (snapped to grid)
                 const noteValue = Math.round(snappedTop / 25);
                 const startTime = snappedLeft / 12.5;
                 const endTime = startTime + 2;

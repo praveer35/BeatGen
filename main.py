@@ -131,7 +131,7 @@ def play():
     # Add track names and set tempo
     for i, track in enumerate(tracks):
         midi.addTrackName(i, 0, f"Track {i + 1}")
-        midi.addTempo(i, 0, 120)  # Setting the tempo to 120 BPM
+        midi.addTempo(i, 0, bpm)  # Setting the tempo to 120 BPM
 
     # Add notes to the MIDI object
     for i, track in enumerate(tracks):
@@ -146,7 +146,7 @@ def play():
     midi_data = pretty_midi.PrettyMIDI('output.mid')
     audio_data = midi_data.synthesize()
     sample_rate = 44100
-    audio_data = np.int16(audio_data / np.max(np.abs(audio_data)) * 32767)
+    audio_data = np.float32(audio_data / np.max(np.abs(audio_data)) * 32767)
     write('output.wav', sample_rate, audio_data)
     print(f"Converted output.mid to output.wav")
 
