@@ -11,15 +11,12 @@ import sqlite3
 import pretty_midi
 import numpy as np
 from scipy.io.wavfile import write
-import scipy.signal
 
 import json
 import pty
 
 import lib
 #import db
-
-import fluidsynth
 
 #from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -39,12 +36,6 @@ def init_db():
                       )''')
     conn.commit()
     conn.close()
-
-def vn(val):
-    conv = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-    append = (4 + math.floor(val / 7))
-    note = val % 7
-    return str(conv[note]) + str(append)
 
 @app.route('/')
 def home():
@@ -118,6 +109,9 @@ def create():
 
 @app.route('/play', methods=['POST'])
 def play():
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'danger')
+        return redirect(url_for('login'))
     measures = request.json['measures']
     print(type(measures))
     if type(measures) == str:
@@ -126,150 +120,50 @@ def play():
     bpm = request.json['bpm']
     channel_velocities = []
     tracks = []
-    # flat_melody = []
-    # for measure in melody:
-    #     for note in measure:
-    #         flat_melody.append([20 - note[0], note[1], note[2]])
-    # arpeggio = measures['arpeggio']
-    # flat_arpeggio = []
-    # for measure in arpeggio:
-    #     for note in measure:
-    #         flat_arpeggio.append([20 - note[0], note[1], note[2]])
-    # chords = measures['chords']
-    # flat_chords = []
-    # for measure in chords:
-    #     for note in measure:
-    #         flat_chords.append([20 - note[0], note[1], note[2]])
     for key in measures.keys():
         synth_track = lib.synth_convert(measures[key])
         channel_velocities.append(velocities[key])
         tracks.append(synth_track)
-    # synth_melody = lib.synth_convert(measures['melody'])
-    # velocity_dict[synth_melody] = velocities['melody']
-    # synth_chords = lib.synth_convert(measures['chords'])
-    # velocity_dict[synth_chords] = velocities['chords']
-    # synth_arpeggio = lib.synth_convert(measures['arpeggio'])
-    # velocity_dict[synth_arpeggio] = velocities['arpeggio']
-    # synth_arpeggio = lib.synth_convert(flat_arpeggio)
-    # synth_chords = lib.synth_convert(flat_chords)
     print(tracks[0])
-    # tracks = [
-    #     synth_melody,
-    #     synth_chords,
-    #     synth_arpeggio
-    #     # synth_arpeggio,
-    #     # synth_chords
-    # ]
-    soundfont = "Yamaha_C3_Grand_Piano.sf2"
-    synth = fluidsynth.Synth()
-    #synth.delete()
-    synth.start()
-    print('synth started')
-    sfid = synth.sfload(soundfont)
-    # Select program for each channel
-    for channel in range(len(tracks)):
-        synth.program_select(channel, sfid, 0, 0)
-    async def play_note_on_channel(synth, note, start_time, end_time, channel):
-        await asyncio.sleep(start_time * 60 / bpm)
-        synth.noteon(channel, note, channel_velocities[channel])
-        await asyncio.sleep((end_time - start_time) * 60 / bpm)
-        synth.noteoff(channel, note)
-    async def play_track(synth, track, channel):
-        tasks = [play_note_on_channel(synth, note, start_time, end_time, channel) for note, start_time, end_time in track]
-        await asyncio.gather(*tasks)
-    async def main_player():
-        tasks = [play_track(synth, track, channel) for channel, track in enumerate(tracks)]
-        await asyncio.gather(*tasks)
-        synth.delete()
-    # Run the main function
-    asyncio.run(main_player())
-    # sfid = synth.sfload(soundfont)
-    # for channel in range(len(tracks) + 1):
-    #     synth.program_select(channel, sfid, 0, 0)
-    # async def play_track(synth, track, channel):
-    #     for note, start_time, duration in track:
-    #         await asyncio.sleep(start_time * 60/bpm)
-    #         synth.noteon(channel, note, 100 if track == synth_melody else 0)
-    #         await asyncio.sleep(duration * 60/bpm)
-    #         synth.noteoff(channel, note)
-    # async def play_chords(synth, chords):
-    #     i = 0
-    #     while i < len(chords):
-    #         print('playing chord')
-    #         synth.noteon(1, chords[i][0], 100)
-    #         synth.noteon(1, chords[i+1][0], 100)
-    #         synth.noteon(1, chords[i+2][0], 100)
-    #         await asyncio.sleep(4 * 60/bpm)
-    #         synth.noteoff(1, chords[i][0])
-    #         synth.noteoff(1, chords[i+1][0])
-    #         synth.noteoff(1, chords[i+2][0])
-    #         i += 3
-    # async def main_player():
-    #     tasks = [play_track(synth, track, channel) for channel, track in enumerate(tracks)]
-    #     tasks.append(play_chords(synth, synth_chords))
-    #     await asyncio.gather(*tasks)
-    #     synth.delete()
-    # asyncio.run(main_player())
-    return json.dumps({'data': 'success'})
+    # Create a MIDI object
+    midi = MIDIFile(len(tracks))
 
-# @app.route('/play', methods=['POST'])
-# def play():
-#     if 'user_id' not in session:
-#         flash('Please log in to access this page.', 'danger')
-#         return redirect(url_for('login'))
-#     measures = request.json['measures']
-#     print(type(measures))
-#     if type(measures) == str:
-#         measures = json.loads(measures)
-#     velocities = request.json['velocities']
-#     bpm = request.json['bpm']
-#     channel_velocities = []
-#     tracks = []
-#     for key in measures.keys():
-#         synth_track = lib.synth_convert(measures[key])
-#         channel_velocities.append(velocities[key])
-#         tracks.append(synth_track)
-#     print(tracks[0])
-#     # Create a MIDI object
-#     midi = MIDIFile(len(tracks))
+    # Add track names and set tempo
+    for i, track in enumerate(tracks):
+        midi.addTrackName(i, 0, f"Track {i + 1}")
+        midi.addTempo(i, 0, bpm)  # Setting the tempo to 120 BPM
 
-#     # Add track names and set tempo
-#     for i, track in enumerate(tracks):
-#         midi.addTrackName(i, 0, f"Track {i + 1}")
-#         midi.addTempo(i, 0, bpm)  # Setting the tempo to 120 BPM
+    # Add notes to the MIDI object
+    for i, track in enumerate(tracks):
+        for note, start_time, end_time in track:
+            duration = end_time - start_time
+            midi.addNote(i, 0, note, start_time, duration, channel_velocities[i])  # Channel 0, velocity 100
 
-#     # Add notes to the MIDI object
-#     for i, track in enumerate(tracks):
-#         for note, start_time, end_time in track:
-#             duration = end_time - start_time
-#             midi.addNote(i, 0, note, start_time, duration, channel_velocities[i])  # Channel 0, velocity 100
-
-#     # Write the MIDI file to disk
-#     with open("output.mid", "wb") as output_file:
-#         midi.writeFile(output_file)
+    # Write the MIDI file to disk
+    with open("output.mid", "wb") as output_file:
+        midi.writeFile(output_file)
     
-#     midi_data = pretty_midi.PrettyMIDI('output.mid')
-#     wave = lambda t: scipy.signal.sawtooth(t, 0.5)
-#     audio_data = midi_data.synthesize(wave=wave)
-#     sample_rate = 44100
-#     audio_data = np.float32(audio_data / np.max(np.abs(audio_data)) * 32767)
-#     write('output.wav', sample_rate, audio_data)
-#     print(f"Converted output.mid to output.wav")
+    midi_data = pretty_midi.PrettyMIDI('output.mid')
+    audio_data = midi_data.synthesize()
+    sample_rate = 44100
+    audio_data = np.float32(audio_data / np.max(np.abs(audio_data)) * 32767)
+    write('output.wav', sample_rate, audio_data)
+    print(f"Converted output.mid to output.wav")
 
-#     # Initialize pygame mixer
-#     #pygame.init()
-#     #pygame.mixer.init()
+    # Initialize pygame mixer
+    #pygame.init()
+    #pygame.mixer.init()
 
-#     # Load and play the MIDI file
-#     #pygame.mixer.music.load('output.mid')
-#     os.remove('output.mid')
-#     #pygame.mixer.music.play()
+    # Load and play the MIDI file
+    #pygame.mixer.music.load('output.mid')
+    os.remove('output.mid')
+    #pygame.mixer.music.play()
 
-#     #while pygame.mixer.music.get_busy():
-#     #    pygame.time.Clock().tick(10)
-#     # Run the main function
-#     return send_file('output.wav', mimetype='audio/wav', as_attachment=True)
-#     #return json.dumps({'data': 'success'})
+    #while pygame.mixer.music.get_busy():
+    #    pygame.time.Clock().tick(10)
+    # Run the main function
+    return send_file('output.wav', mimetype='audio/wav', as_attachment=True)
+    #return json.dumps({'data': 'success'})
 
 @app.route('/save', methods=['POST'])
 def save():
