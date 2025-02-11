@@ -1,55 +1,63 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
     <style>
         body {
-            font-family: monospace;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: blue;
+            color: white;
+        }
+        a, a:visited {
+            color: white;
         }
     </style>
     <body>
-        <h1>MUSIC GENERATOR: Beta Version</h1>
-        <h3>Note: Sine waves are used for audio, so audio quality may be harsh on loud volumes (especially if you are not using a Mac computer).</h3>
         <h1>Create</h1>
-        <form action="/generate" method="post">
-            <label for="pitch_range">Pitch Range:</label>
-            <input type="number" step="1" id="pitch_range" name="pitch_range" value="8"><br><br>
-    
-            <label for="pitch_viscosity">Pitch Viscosity:</label>
-            <input type="number" step="1" id="pitch_viscosity" name="pitch_viscosity" value="4"><br><br>
-    
-            <label for="hook_chord_boost_onchord">Hook Chord Boost Onchord:</label>
-            <input type="number" step="0.1" id="hook_chord_boost_onchord" name="hook_chord_boost_onchord" value="5"><br><br>
-    
-            <label for="hook_chord_boost_2_and_6">Hook Chord Boost 2 and 6:</label>
-            <input type="number" step="0.1" id="hook_chord_boost_2_and_6" name="hook_chord_boost_2_and_6" value="0.5"><br><br>
-    
-            <label for="hook_chord_boost_7">Hook Chord Boost 7:</label>
-            <input type="number" step="0.1" id="hook_chord_boost_7" name="hook_chord_boost_7" value="0.5"><br><br>
-    
-            <label for="hook_chord_boost_else">Hook Chord Boost Else:</label>
-            <input type="number" step="0.1" id="hook_chord_boost_else" name="hook_chord_boost_else" value="0.0"><br><br>
-    
-            <label for="nonhook_chord_boost_onchord">Non-hook Chord Boost Onchord:</label>
-            <input type="number" step="0.1" id="nonhook_chord_boost_onchord" name="nonhook_chord_boost_onchord" value="3"><br><br>
-    
-            <label for="nonhook_chord_boost_2_and_6">Non-hook Chord Boost 2 and 6:</label>
-            <input type="number" step="0.1" id="nonhook_chord_boost_2_and_6" name="nonhook_chord_boost_2_and_6" value="1"><br><br>
-    
-            <label for="nonhook_chord_boost_7">Non-hook Chord Boost 7:</label>
-            <input type="number" step="0.1" id="nonhook_chord_boost_7" name="nonhook_chord_boost_7" value="1"><br><br>
-    
-            <label for="nonhook_chord_boost_else">Non-hook Chord Boost Else:</label>
-            <input type="number" step="0.1" id="nonhook_chord_boost_else" name="nonhook_chord_boost_else" value="0.5"><br><br>
-    
-            <label for="already_played_boost">Already Played Boost:</label>
-            <input type="number" step="0.1" id="already_played_boost" name="already_played_boost" value="1.25"><br><br>
-    
-            <label for="matchability_noise">Matchability Noise:</label>
-            <input type="number" step="0.1" id="matchability_noise" name="matchability_noise" value="0.1"><br><br>
-    
-            <label for="hmm_bias">HMM Bias:</label>
-            <input type="number" step="0.1" id="hmm_bias" name="hmm_bias" value="0.5"><br><br>
-    
-            <button type="submit">Submit</button>
-        </form>
+        <h3>Note: Sine waves are used for audio, so audio quality may be harsh on loud volumes (especially if you are not using a Mac computer).</h3>
+        <details>
+            <summary>Stats for nerds</summary>
+            <form action="/generate" method="post">
+                <label for="pitch_range">Pitch Range:</label>
+                <input type="number" step="1" id="pitch_range" name="pitch_range" value="8"><br><br>
+        
+                <label for="pitch_viscosity">Pitch Viscosity:</label>
+                <input type="number" step="1" id="pitch_viscosity" name="pitch_viscosity" value="{{ x[0] }}"><br><br>
+        
+                <label for="hook_chord_boost_onchord">Hook Chord Boost Onchord:</label>
+                <input type="number" step="0.1" id="hook_chord_boost_onchord" name="hook_chord_boost_onchord" value="{{ x[1] }}"><br><br>
+        
+                <label for="hook_chord_boost_2_and_6">Hook Chord Boost 2 and 6:</label>
+                <input type="number" step="0.1" id="hook_chord_boost_2_and_6" name="hook_chord_boost_2_and_6" value="{{ x[2] }}"><br><br>
+        
+                <label for="hook_chord_boost_7">Hook Chord Boost 7:</label>
+                <input type="number" step="0.1" id="hook_chord_boost_7" name="hook_chord_boost_7" value="{{ x[3] }}"><br><br>
+        
+                <label for="hook_chord_boost_else">Hook Chord Boost Else:</label>
+                <input type="number" step="0.1" id="hook_chord_boost_else" name="hook_chord_boost_else" value="{{ x[4] }}"><br><br>
+        
+                <label for="nonhook_chord_boost_onchord">Non-hook Chord Boost Onchord:</label>
+                <input type="number" step="0.1" id="nonhook_chord_boost_onchord" name="nonhook_chord_boost_onchord" value="{{ x[5] }}"><br><br>
+        
+                <label for="nonhook_chord_boost_2_and_6">Non-hook Chord Boost 2 and 6:</label>
+                <input type="number" step="0.1" id="nonhook_chord_boost_2_and_6" name="nonhook_chord_boost_2_and_6" value="{{ x[6] }}"><br><br>
+        
+                <label for="nonhook_chord_boost_7">Non-hook Chord Boost 7:</label>
+                <input type="number" step="0.1" id="nonhook_chord_boost_7" name="nonhook_chord_boost_7" value="{{ x[7] }}"><br><br>
+        
+                <label for="nonhook_chord_boost_else">Non-hook Chord Boost Else:</label>
+                <input type="number" step="0.1" id="nonhook_chord_boost_else" name="nonhook_chord_boost_else" value="{{ x[8] }}"><br><br>
+        
+                <label for="already_played_boost">Already Played Boost:</label>
+                <input type="number" step="0.1" id="already_played_boost" name="already_played_boost" value="{{ x[9] }}"><br><br>
+        
+                <label for="matchability_noise">Matchability Noise:</label>
+                <input type="number" step="0.1" id="matchability_noise" name="matchability_noise" value="0.1"><br><br>
+        
+                <label for="hmm_bias">HMM Bias:</label>
+                <input type="number" step="0.1" id="hmm_bias" name="hmm_bias" value="0.5"><br><br>
+            </details>
+                <br /><br />
+                <button type="submit">Submit</button>
+            </form>
     </body>
-</html>
+{% endblock %}

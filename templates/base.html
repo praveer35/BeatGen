@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <style>
         body {
-            font-family: monospace;
+            font-family: Arial, Helvetica, sans-serif;
         }
     </style>
     <title>{% block title %}{% endblock %}</title>
 </head>
 <body>
-    <h1>MUSIC GENERATOR: Beta Version</h1>
+    <h1>MUSIC GENERATOR</h1>
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <ul class="flashes">
@@ -25,6 +25,7 @@
         {% if 'user_id' in session %}
             <a href="{{ url_for('logout') }}">Logout</a>
             <a href="{{ url_for('create') }}">Create</a>
+            <a href="{{ url_for('saved') }}">Saved</a>
         {% else %}
             <a href="{{ url_for('login') }}">Login</a>
             <a href="{{ url_for('register') }}">Register</a>

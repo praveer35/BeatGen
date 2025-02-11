@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<style>
+    table, td {
+        padding: 20px;
+    }
+</style>
+<h1>Saved</h1>
+<table>
+    <tr>
+        <th>Date Created</th>
+        <th>Name</th>
+    </tr>
+    {% for n in x: %}
+    <tr>
+        <td>{{ n[1] }}</td>
+        <td><a href="{{ url_for('track', generation_id=n[0]) }}">{{ n[2] }}</a></td>
+        <td><button onclick="deleteSaved({{ n[0] }})">Delete</button></td>
+    </tr>
+    {% endfor %}
+</table>
+<script>
+
+function deleteSaved(generation_id) {
+    fetch('/saved', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: 'delete',
+            generation_id: generation_id
+        }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok.');
+        }
+        window.location.reload();
+    });
+}
+
+</script>
+{% endblock %}
