@@ -19,7 +19,7 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 #time.sleep(2)
 
