@@ -12,7 +12,6 @@ import sqlite3
 import pretty_midi
 import numpy as np
 from scipy.io.wavfile import write
-import scipy.signal
 
 import json
 import pty
@@ -22,8 +21,6 @@ from itertools import chain
 import lib
 import midiutil
 #import db
-
-import fluidsynth
 
 #from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -43,12 +40,6 @@ def init_db():
                       )''')
     conn.commit()
     conn.close()
-
-def vn(val):
-    conv = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-    append = (4 + math.floor(val / 7))
-    note = val % 7
-    return str(conv[note]) + str(append)
 
 @app.route('/')
 def home():
@@ -204,6 +195,9 @@ def track(generation_id):
 
 @app.route('/play', methods=['POST'])
 def play():
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'danger')
+        return redirect(url_for('login'))
     measures = request.json['measures']
     print(type(measures))
     if type(measures) == str:
@@ -223,7 +217,7 @@ def play():
     # Add track names and set tempo
     for i, track in enumerate(tracks):
         midi.addTrackName(i, 0, f"Track {i + 1}")
-        midi.addTempo(i, 0, 120)  # Setting the tempo to 120 BPM
+        midi.addTempo(i, 0, bpm)  # Setting the tempo to 120 BPM
 
     # Add notes to the MIDI object
     for i, track in enumerate(tracks):
@@ -278,29 +272,6 @@ def play():
 #     # Write the MIDI file to disk
 #     with open("output.mid", "wb") as output_file:
 #         midi.writeFile(output_file)
-    
-#     midi_data = pretty_midi.PrettyMIDI('output.mid')
-#     wave = lambda t: scipy.signal.sawtooth(t, 0.5)
-#     audio_data = midi_data.synthesize(wave=wave)
-#     sample_rate = 44100
-#     audio_data = np.float32(audio_data / np.max(np.abs(audio_data)) * 32767)
-#     write('output.wav', sample_rate, audio_data)
-#     print(f"Converted output.mid to output.wav")
-
-#     # Initialize pygame mixer
-#     #pygame.init()
-#     #pygame.mixer.init()
-
-#     # Load and play the MIDI file
-#     #pygame.mixer.music.load('output.mid')
-#     os.remove('output.mid')
-#     #pygame.mixer.music.play()
-
-#     #while pygame.mixer.music.get_busy():
-#     #    pygame.time.Clock().tick(10)
-#     # Run the main function
-#     return send_file('output.wav', mimetype='audio/wav', as_attachment=True)
-#     #return json.dumps({'data': 'success'})
 
 @app.route('/save', methods=['POST'])
 def save():
