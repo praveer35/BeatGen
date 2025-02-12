@@ -224,9 +224,9 @@ def play():
     #     for note in measure:
     #         flat_chords.append([20 - note[0], note[1], note[2]])
     synth = fluidsynth.Synth()
-    synth.start(driver="dummy")
+    synth.start(driver="pulseaudio")
     #synth.delete()
-    #synth.start()
+    synth.start()
     print('synth started')
     for key in measures.keys():
         synth_track = lib.synth_convert(measures[key])
