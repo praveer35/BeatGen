@@ -192,8 +192,9 @@ def track(generation_id):
         chords = np.frombuffer(x[0][3], dtype=np.int16).tolist()
     
     # print(melody, chords)
+    soundfont_titles = [x[:-4] for x in os.listdir("Soundfonts")]
 
-    return render_template('new-generate.html', len=len(melody), melody=melody, arpeggio=arpeggio, chords=chords, key=1, bars=len(chords), generation_name=x[0][1], generation_id=generation_id, MODE='TRACK')
+    return render_template('new-generate.html', len=len(melody), melody=melody, arpeggio=arpeggio, chords=chords, key=1, bars=len(chords), soundfont_titles=soundfont_titles, generation_name=x[0][1], generation_id=generation_id, MODE='TRACK')
 
 @app.route('/play', methods=['POST'])
 def play():
@@ -205,6 +206,9 @@ def play():
     bpm = request.json['bpm']
     channel_velocities = []
     tracks = []
+    sfids = []
+    soundfont_map = request.json['soundfontMap']
+    print(soundfont_map)
     # flat_melody = []
     # for measure in melody:
     #     for note in measure:
@@ -219,10 +223,15 @@ def play():
     # for measure in chords:
     #     for note in measure:
     #         flat_chords.append([20 - note[0], note[1], note[2]])
+    synth = fluidsynth.Synth()
+    #synth.delete()
+    synth.start()
+    print('synth started')
     for key in measures.keys():
         synth_track = lib.synth_convert(measures[key])
         channel_velocities.append(velocities[key])
         tracks.append(synth_track)
+        sfids.append(synth.sfload('Soundfonts/'+soundfont_map[key]+'.sf2'))
     # synth_melody = lib.synth_convert(measures['melody'])
     # velocity_dict[synth_melody] = velocities['melody']
     # synth_chords = lib.synth_convert(measures['chords'])
@@ -239,15 +248,17 @@ def play():
     #     # synth_arpeggio,
     #     # synth_chords
     # ]
-    soundfont = "Yamaha_C3_Grand_Piano.sf2"
-    synth = fluidsynth.Synth()
-    #synth.delete()
-    synth.start()
-    print('synth started')
-    sfid = synth.sfload(soundfont)
+    # soundfont = "Yamaha_C3_Grand_Piano.sf2"
+    # soundfonts = [
+    #     "Yamaha_C3_Grand_Piano",
+    #     "NylonFinger",
+    #     "Yamaha_C3_Grand_Piano"
+    # ]
+    # sfid = synth.sfload(soundfont)
+    # sfids = [synth.sfload('Soundfonts/' + soundfont + '.sf2') for soundfont in soundfonts]
     # Select program for each channel
     for channel in range(len(tracks)):
-        synth.program_select(channel, sfid, 0, 0)
+        synth.program_select(channel, sfids[channel], 0, 0)
     async def play_note_on_channel(synth, note, start_time, end_time, channel):
         await asyncio.sleep(start_time * 60 / bpm)
         synth.noteon(channel, note, channel_velocities[channel])
@@ -470,7 +481,10 @@ def generate():
     arpeggio = lib.get_arpeggio(data_to_arpeggiator)
     print('arpeggio:', arpeggio)
 
-    return render_template('new-generate.html', len=len(melody), melody=melody, rhythm=rhythm, arpeggio=arpeggio, chords=chords, key=key, bars=len(chords), sensibility_index=voice_line['sensibility_index'], average_entropy=voice_line['average_entropy'], confidence_percentile=voice_line['confidence_percentile'], geometric_mean=voice_line['geometric_mean'], MODE='GENERATE')
+    soundfont_titles = [x[:-4] for x in os.listdir("Soundfonts")]
+    print(soundfont_titles)
+
+    return render_template('new-generate.html', len=len(melody), melody=melody, rhythm=rhythm, arpeggio=arpeggio, chords=chords, key=key, bars=len(chords), soundfont_titles=soundfont_titles, sensibility_index=voice_line['sensibility_index'], average_entropy=voice_line['average_entropy'], confidence_percentile=voice_line['confidence_percentile'], geometric_mean=voice_line['geometric_mean'], MODE='GENERATE')
 
 @app.route('/train', methods=['POST'])
 def train():

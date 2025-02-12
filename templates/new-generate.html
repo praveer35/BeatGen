@@ -227,6 +227,7 @@ let isResizing = false;
 let selectedNote = null;
 let dawContainers = {};
 let measures = {};
+const soundfontMap = {}; // Stores { name -> selected soundfont title }
 //const dawContainers = [];
 
 let bars = {{ bars }};
@@ -241,6 +242,7 @@ let bars = {{ bars }};
 // document.getElementById('melody').textContent = melody;
 
 function play() {
+    soundfontMap
     data = {
         measures: measures,
         velocities: {
@@ -248,7 +250,8 @@ function play() {
             'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
             'chords': parseInt(document.getElementById('chords-velocity').value)
         },
-        bpm: parseInt(document.getElementById('bpm').value)
+        bpm: parseInt(document.getElementById('bpm').value),
+        soundfontMap: soundfontMap
     }
     console.log(data);
     fetch('/play', {
@@ -582,6 +585,30 @@ function createTrack(rawMelody, name) {
     velocity.value = (name == 'arpeggio') ? 0 : 100;
     document.getElementById('all-daws').appendChild(velocity);
 
+    // Create dropdown for soundfont selection
+    const select = document.createElement('select');
+    select.id = name + '-soundfont';
+
+    // Populate dropdown with Flask-passed soundfont titles
+    const soundfonts = {{ soundfont_titles | safe }};
+    soundfonts.forEach(title => {
+        const option = document.createElement('option');
+        option.value = title;
+        option.textContent = title;
+        select.appendChild(option);
+    });
+
+    // Store selected value in the map
+    select.addEventListener('change', () => {
+        soundfontMap[name] = select.value;
+        // alert(JSON.stringify(soundfontMap));
+    });
+
+    // Initialize map with default selection
+    soundfontMap[name] = soundfonts[0];
+
+    document.getElementById('all-daws').appendChild(select);
+
     const parentContainer = document.createElement('div');
     parentContainer.id = 'parent-container-' + name;
     parentContainer.classList.add('parent-container');
@@ -727,7 +754,7 @@ function createTrack(rawMelody, name) {
         });
     }
 }
-
+// alert({{ soundfont_titles | safe }});
 createTrack({{ melody }}, 'melody');
 createTrack({{ arpeggio }}, 'arpeggio');
 createTrack({{ chords }}, 'chords');
