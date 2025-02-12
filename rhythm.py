@@ -14,6 +14,7 @@ import pickle
 
 data_input = json.loads(input())
 notes = data_input['notes']
+#notes = [-1]
 bars = len(notes)
 #bars = 4
 
@@ -68,6 +69,10 @@ for i in range(bars):
             if converted_rhythms[j] == 0:
                 continue
             if converted_rhythms[j] < 4 - sum:
+                if converted_rhythms[j] == 0.75:
+                    converted_rhythms[j] = 0.5 if random.random() < 0.5 else 1.0
+                elif converted_rhythms[j] == 0.25:
+                    converted_rhythms[j] = 0.5
                 temp_rhythm.append(converted_rhythms[j])
                 sum += converted_rhythms[j]
 
@@ -79,10 +84,12 @@ for i in range(bars):
 if len(temp_rhythm) > 0:
     final_rhythm.append(temp_rhythm)
 
-final_rhythm[2] = final_rhythm[0]
+if len(final_rhythm) == 4:
+    final_rhythm[2] = final_rhythm[0]
 
 data = {
-   'rhythm': list(chain.from_iterable(final_rhythm)),
+   #'rhythm': list(chain.from_iterable(final_rhythm)),
+   'rhythm': final_rhythm
 }
 
 json.dump(data, sys.stdout)

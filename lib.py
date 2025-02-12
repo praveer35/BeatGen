@@ -2,7 +2,9 @@ import os
 import pty
 import json
 import math
+import numpy as np
 from subprocess import Popen, PIPE
+from Bayesian_Opt_Engine import Bayesian_Opt_Engine
 
 def get_chords(key, bars):
 
@@ -43,7 +45,16 @@ def get_voice_line(json_data):
     melody_stdout_data, err = p.communicate(input=json.dumps(json_data))
     if err: print('VOICE_LINE_ERR:', err)
     try:
-        return json.loads(melody_stdout_data)['melody']
+        return json.loads(melody_stdout_data)
+    except:
+        return get_voice_line(json_data)
+    
+def get_regeneration_line(json_data):
+    p = Popen(['python3', 'regeneration_line.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+    melody_stdout_data, err = p.communicate(input=json.dumps(json_data))
+    if err: print('VOICE_LINE_ERR:', err)
+    try:
+        return json.loads(melody_stdout_data)
     except:
         return get_voice_line(json_data)
 
@@ -51,7 +62,7 @@ def get_arpeggio(json_data):
     chords = json_data['chords']
     json_data['chords'] = [json_data['chords'][0]]
     json_data['rhythm'] = [0.5] * 8
-    arpeggio_raw = get_voice_line(json_data)
+    arpeggio_raw = get_voice_line(json_data)['melody']
     arpeggio_mid = [arpeggio_raw[i][0] for i in range(len(arpeggio_raw))]
     arpeggio_mid *= len(chords)
     print(arpeggio_mid)
@@ -84,6 +95,39 @@ def vn(val):
     append = (4 + math.floor(val / 7))
     note = val % 7
     return str(conv[note]) + str(append)
+
+def optimize_input(chords, melody, n):
+    eng = Bayesian_Opt_Engine(chords=chords, melody=melody)
+    return eng.bayesian_optimization(n)
+
+def batch_optimize_input(generations, n):
+    eng = Bayesian_Opt_Engine(generations=generations)
+    return eng.bayesian_optimization(n)
+
+def dynamic_time_warping(melody1, melody2, w1=1, w2=1, w3=2, missing_penalty=10):
+    n, m = len(melody1), len(melody2)
+    D = np.full((n+1, m+1), float('inf'))
+    D[0][0] = 0
+    for i in range(1, n+1):
+        D[i][0] = D[i-1][0] + missing_penalty
+    for j in range(1, m+1):
+        D[0][j] = D[0][j-1] + missing_penalty
+    def dist(a, b):
+        if b == None:
+            return w2 * a[1] + w3 * abs(a[2])
+        return w1 * abs(a[0] - b[0]) + w2 * abs(a[1] - b[1]) + w3 * abs(a[2] - b[2])
+    for i in range(1, n+1):
+        for j in range(1, m+1):
+            cost = dist(melody1[i-1], melody2[j-1])
+            D[i][j] = min(
+                D[i-1][j] + missing_penalty,
+                D[i][j-1] + missing_penalty,
+                D[i-1][j-1] + cost
+            )
+    dtw_cost = D[n][m]
+    max_cost = (n + m) * missing_penalty
+    normalized_difference = (dtw_cost / max_cost) * 100
+    return normalized_difference
 
 # def get_rhythm():
 #     p = Popen(['python3', 'rhythm.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)

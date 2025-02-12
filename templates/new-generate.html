@@ -1,10 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+    {% extends "base.html" %}
+    {% block title %}Home{% endblock %}
+    {% block content %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DAW MIDI Notes</title>
     <style>
+a, a:visited {
+    color: white;
+}
 
 body {
     font-family: monospace;
@@ -12,10 +15,40 @@ body {
     color: white;
 }
 
-.parent-container {
+/* .parent-container {
     display: flex;
     flex-wrap: wrap;
     gap: 0px;
+} */
+
+.parent-container {
+    display: flex;
+    flex-wrap: wrap;
+    /* gap: 5px; Ensure some spacing between each DAW group */
+    align-items: flex-start;
+}
+
+.daw-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Ensures bar and container are centered */
+}
+
+.daw-bar {
+    width: 100%;
+    height: 20px;
+    background-color: rgb(91, 91, 91);
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 10px 10px 0px 0px;
+}
+
+.daw-bar:hover {
+    background-color: gray;
+    color: white;
 }
 
 .daw-container {
@@ -70,6 +103,11 @@ body {
     padding-bottom: 10px;
 }
 
+.highlighted {
+    border-color: blue;
+    background-color: rgba(0, 0, 255, 0.2);
+}
+
     </style>
 </head>
 <body>
@@ -79,18 +117,36 @@ body {
     <!-- <div id="parent-container">
         <div id="daw-container-notes" class="daw-container" style="width:50px;"></div>
     </div> -->
-    <div style="position: absolute; right: 10px; top: 10px; width: 200px; height: 400px; background-color: purple;">
+    <div style="position: fixed; right: 10px; top: 10px; width: 200px; height: 400px; background-color: purple;">
         <p>Hide the following:</p>
         <button onclick="hideToggle('melody')">melody</button>
         <button onclick="hideToggle('arpeggio')">arpeggio</button>
         <button onclick="hideToggle('chords')">chords</button>
         <p>BPM: <input id="bpm" type="text" value="120"></p>
-        <p>Play:</p>
+        <p>Play: (WAIT UP TO 5 SEC)</p>
         <button onclick="play()">Play</button>
-        <p>Save:</p>
-        <button onclick="save()">Save</button>
+        <p>Download:</p>
+        <button onclick="save()">Download</button>
+        {% if MODE == 'GENERATE': %}
+        <p>Save Preferences:</p>
+        Name: <input id="generation_name" type="text" value="Untitled "/>
+        <span id="generation_button"><button onclick="train()">Save Preferences</button></span>
+        {% else: %}
+        <p>Update Name: <input id="generation_name" type="text" value="{{ generation_name }}"/></p>
+        <button onclick="save_name()">Save Name</button>
+        <button onclick="save_changes()">Save Changes</button>
+        {% endif %}
+        <br /><br />
+        <button onclick="regenerate()">Regenerate</button>
+        <input id="regenerate-after" type="checkbox" />Regenerate all bars after
     </div>
-    <p id="melody"></p>
+    <!-- <p id="melody"></p> -->
+     {% if MODE == 'GENERATE': %}
+    <p>Sensibility index: {{ sensibility_index }}</p>
+    <p>Average entropy: {{ average_entropy }}</p>
+    <p>Confidence percentile: {{ confidence_percentile }}</p>
+    <p>Geometric mean: {{ geometric_mean }}</p>
+    {% endif %}
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
@@ -112,6 +168,55 @@ function vn(val) {
     return "" + conv[note] + "" + append;
 }
 
+function PYTHON_TO_JS_MELODY_CONVERTER(rawMelody) {
+    let melody = [];
+    let track_measures = [];
+    let measure_melody = [];
+    let leftOffset = 0;
+    for (const note of rawMelody) {
+        if (leftOffset % 16 == 0) {
+            if (measure_melody.length != 0) {
+                track_measures.push(measure_melody);
+            }
+            measure_melody = [];
+        }
+        let start = leftOffset;
+        let end = leftOffset + note[1] * 4;
+        let rank = 20 - note[0];
+        melody.push([rank, start, end]);
+        measure_melody.push([rank, start % 16, (end - 1) % 16 + 1]);
+        leftOffset = end;
+    }
+    if (measure_melody.length != 0) {
+        track_measures.push(measure_melody);
+    }
+    return track_measures;
+}
+
+function JS_TO_PYTHON_MELODY_CONVERTER(rawMelody) {
+    console.log(rawMelody);
+    let melody = [];
+    for (let i = 0; i < rawMelody.length; i++) {
+        for (const note of rawMelody[i]) {
+            melody.push([20 - note[0], (note[2] - note[1]) / 4]);
+        }
+    }
+    return melody;
+}
+
+function addDummyNote(name, dawIndex) {
+    const noteDiv = document.createElement('div');
+    noteDiv.classList.add('note');
+    noteDiv.dataset.note = 40;
+    noteDiv.dataset.start = 0;
+    noteDiv.dataset.end = 0;
+    noteDiv.style.visibility = 'hidden';
+    noteDiv.style.left = '0px';
+    noteDiv.style.top = '975px';
+    noteDiv.style.width = '50px';
+    dawContainers[name][dawIndex].appendChild(noteDiv);
+}
+
 let currentDaw = null;
 let draggedNote = null;
 let resizeHandle = null;
@@ -122,6 +227,7 @@ let isResizing = false;
 let selectedNote = null;
 let dawContainers = {};
 let measures = {};
+const soundfontMap = {}; // Stores { name -> selected soundfont title }
 //const dawContainers = [];
 
 let bars = {{ bars }};
@@ -133,9 +239,10 @@ let bars = {{ bars }};
 //     [3, 3, 8]
 // ];
 
-document.getElementById('melody').textContent = melody;
+// document.getElementById('melody').textContent = melody;
 
 function play() {
+    soundfontMap
     data = {
         measures: measures,
         velocities: {
@@ -143,7 +250,8 @@ function play() {
             'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
             'chords': parseInt(document.getElementById('chords-velocity').value)
         },
-        bpm: parseInt(document.getElementById('bpm').value)
+        bpm: parseInt(document.getElementById('bpm').value),
+        soundfontMap: soundfontMap
     }
     console.log(data);
     fetch('/play', {
@@ -209,10 +317,101 @@ function save() {
     });
 }
 
+function train() {
+    data = {
+        melody: JS_TO_PYTHON_MELODY_CONVERTER(measures['melody']),
+        chords: {{ chords }},
+        generation_name: document.getElementById('generation_name').value
+    }
+    console.log(data);
+    document.getElementById('generation_button').innerHTML = "Saved.";
+    fetch('/train', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+}
+
+function regenerate() {
+    if (currentDaw == null) {
+        alert("No bar selected.");
+        return;
+    }
+    let id_deconstructed = currentDaw.id.split("-");
+    // e.g. daw-container-melody-2
+    let track_name = id_deconstructed[2];
+    let bar = parseInt(id_deconstructed[3]);
+    data = {
+        track_name: track_name,
+        track: JS_TO_PYTHON_MELODY_CONVERTER(measures[track_name]),
+        chords: {{ chords }},
+        bar: bar,
+        bar_count: bars,
+        isolated: !(document.getElementById('regenerate-after').checked)
+    }
+    console.log(data);
+    fetch('/regenerate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => response.json())  // Parse JSON from response
+    .then(data => {
+        measures[track_name] = PYTHON_TO_JS_MELODY_CONVERTER(data.track);
+        console.log(JS_TO_PYTHON_MELODY_CONVERTER(measures[track_name]));
+        for (let i = 0; i < measures[track_name].length; i++) {
+            dawContainers[track_name][i].querySelectorAll('.note').forEach(note => note.remove());
+            addDummyNote(track_name, i);
+            for (const note of measures[track_name][i]) {
+                createNoteDiv(note[0], note[1], note[2], i, track_name);
+            }
+        }
+        showNotes(measures[track_name], track_name);
+    })
+    .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+    });
+}
+
+function save_name() {
+    data = {
+        generation_name: document.getElementById('generation_name').value
+    }
+    console.log(data);
+    fetch('/track/{{ generation_id }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+}
+
+function save_changes() {
+    data = {
+        action: 'update',
+        melody: JS_TO_PYTHON_MELODY_CONVERTER(measures['melody']),
+        chords: {{ chords }}
+    }
+    console.log(data);
+    fetch('/track/{{ generation_id }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+}
+
 // const dawContainer = document.getElementById('daw-container');
 // <div id="daw-container-notes" class="daw-container" style="width:50px;"></div>
 
 function createNoteDiv(note, start, end, dawIndex, name) {
+    // console.log(note + ', ' + start + ', ' + end + ', ' + dawIndex + ', ' + name);
     const noteDiv = document.createElement('div');
     noteDiv.classList.add('note');
     noteDiv.dataset.note = note;
@@ -255,7 +454,7 @@ document.addEventListener('mousemove', (e) => {
 
         const minWidth = 12.5 - 1;
         let newWidth = Math.max(initialWidth + deltaX, minWidth) - 5 - 1;
-        document.getElementById('melody').textContent = newWidth;
+        // document.getElementById('melody').textContent = newWidth;
 
         const startTime = parseFloat(draggedNote.dataset.start);
         const endTime = startTime + newWidth / 12.5; // Assuming 25px = 1.0 beat
@@ -327,13 +526,14 @@ function updateMelodyArray(daw, track_measures) {
         const noteValue = parseInt(note.dataset.note);
         const startTime = parseInt(note.dataset.start);
         const endTime = parseInt(note.dataset.end);
+        if (startTime == endTime) continue;
         temp_melody.push([noteValue, startTime, endTime]);
     }
     const dawArr = daw.id.split("-")
     const dawIndex = parseInt(dawArr[dawArr.length - 1]);
     track_measures[dawIndex] = temp_melody;
     //console.log('Updated melody:' + melody);
-    document.getElementById('melody').textContent = temp_melody;
+    // document.getElementById('melody').textContent = temp_melody;
     console.log(track_measures);
 }
 
@@ -352,42 +552,25 @@ function showNotes(track_measures, name) {
     }
 }
 
+function renderNotes(track_measures, name) {
+
+}
+
 function createTrack(rawMelody, name) {
     if (name === 'chords') {
         track_measures = [];
         for (const note of rawMelody) {
             track_measures.push([
-                [27 - (note + 1), 0, 16],
-                [27 - (note + 3), 0, 16],
-                [27 - (note + 5), 0, 16]
+                [27 - (note + 1), 0, 15],
+                [27 - (note + 3), 0, 15],
+                [27 - (note + 5), 0, 15]
             ]);
         }
 
         measures[name] = track_measures;
         console.log(track_measures);
     } else {
-        let melody = [];
-        let track_measures = [];
-        let measure_melody = [];
-        let leftOffset = 0;
-        for (const note of rawMelody) {
-            if (leftOffset % 16 == 0) {
-                if (measure_melody.length != 0) {
-                    track_measures.push(measure_melody);
-                }
-                measure_melody = [];
-            }
-            let start = leftOffset;
-            let end = leftOffset + note[1] * 4;
-            let rank = 20 - note[0];
-            melody.push([rank, start, end]);
-            measure_melody.push([rank, start % 16, (end - 1) % 16 + 1]);
-            leftOffset = end;
-        }
-        if (measure_melody.length != 0) {
-            track_measures.push(measure_melody);
-        }
-
+        track_measures = PYTHON_TO_JS_MELODY_CONVERTER(rawMelody);
         measures[name] = track_measures;
         console.log(track_measures);
     }
@@ -402,10 +585,45 @@ function createTrack(rawMelody, name) {
     velocity.value = (name == 'arpeggio') ? 0 : 100;
     document.getElementById('all-daws').appendChild(velocity);
 
+    // Create dropdown for soundfont selection
+    const select = document.createElement('select');
+    select.id = name + '-soundfont';
+
+    // Populate dropdown with Flask-passed soundfont titles
+    const soundfonts = {{ soundfont_titles | safe }};
+    soundfonts.forEach(title => {
+        const option = document.createElement('option');
+        option.value = title;
+        option.textContent = title;
+        select.appendChild(option);
+    });
+
+    // Store selected value in the map
+    select.addEventListener('change', () => {
+        soundfontMap[name] = select.value;
+        // alert(JSON.stringify(soundfontMap));
+    });
+
+    // Initialize map with default selection
+    soundfontMap[name] = soundfonts[0];
+
+    document.getElementById('all-daws').appendChild(select);
+
     const parentContainer = document.createElement('div');
     parentContainer.id = 'parent-container-' + name;
     parentContainer.classList.add('parent-container');
     document.getElementById('all-daws').appendChild(parentContainer);
+
+    // Create a wrapper for both the bar and the DAW container
+    const dawGroupNotes = document.createElement('div');
+    dawGroupNotes.classList.add('daw-group');
+
+    // Create the clickable bar
+    const barDivNotes = document.createElement('div');
+    barDivNotes.classList.add('daw-bar');
+    barDivNotes.textContent = '';
+    barDivNotes.dataset.targetId = 'daw-container-' + name + '-notes';
+    barDivNotes.style.visibility = 'hidden';
 
     const dawContainerNotes = document.createElement('div');
     dawContainerNotes.id = 'daw-container-' + name + '-notes';
@@ -413,26 +631,52 @@ function createTrack(rawMelody, name) {
     dawContainerNotes.classList.add('daw-container-notes');
     dawContainerNotes.style.width = '50px';
     dawContainerNotes.draggable = false;
-    document.getElementById('parent-container-' + name).appendChild(dawContainerNotes);
+    dawGroupNotes.appendChild(barDivNotes);
+    dawGroupNotes.appendChild(dawContainerNotes);
+    document.getElementById('parent-container-' + name).appendChild(dawGroupNotes);
+    // document.getElementById('parent-container-' + name).appendChild(dawContainerNotes);
     dawContainers[name] = [];
 
     for (let i = 0; i < bars; i++) {
+        // Create a wrapper for both the bar and the DAW container
+        const dawGroup = document.createElement('div');
+        dawGroup.classList.add('daw-group');
+
+        // Create the clickable bar
+        const barDiv = document.createElement('div');
+        barDiv.classList.add('daw-bar');
+        barDiv.textContent = 'Bar ' + (i + 1);
+        barDiv.dataset.targetId = 'daw-container-' + name + '-' + i;
+        
+        // Create the main DAW container
         const dawContainer = document.createElement('div');
         dawContainer.id = 'daw-container-' + name + '-' + i;
         dawContainer.classList.add('daw-container');
         dawContainer.name = name;
-        document.getElementById('parent-container-' + name).appendChild(dawContainer);
+
+        // document.getElementById('parent-container-' + name).appendChild(barDiv);
+        // document.getElementById('parent-container-' + name).appendChild(dawContainer);
+
+        // Append both elements inside the group
+        dawGroup.appendChild(barDiv);
+        dawGroup.appendChild(dawContainer);
+        document.getElementById('parent-container-' + name).appendChild(dawGroup);
+
         dawContainers[name].push(document.getElementById('daw-container-' + name + '-' + i));
-        const noteDiv = document.createElement('div');
-        noteDiv.classList.add('note');
-        noteDiv.dataset.note = 40;
-        noteDiv.dataset.start = 0;
-        noteDiv.dataset.end = 0;
-        noteDiv.style.visibility = 'hidden';
-        noteDiv.style.left = '0px';
-        noteDiv.style.top = '975px';
-        noteDiv.style.width = '50px';
-        document.getElementById('daw-container-' + name + '-' + i).appendChild(noteDiv);
+
+        addDummyNote(name, i);
+
+        // Add click event listener to highlight the corresponding dawContainer
+        barDiv.addEventListener('click', function () {
+            document.querySelectorAll('.daw-container').forEach(container => {
+                container.classList.remove('highlighted');
+            });
+
+            const targetContainer = document.getElementById(this.dataset.targetId);
+            targetContainer.classList.add('highlighted');
+            currentDaw = targetContainer;
+            // alert('Clicked: ' + targetContainer.id);
+        });
     }
 
     for (let i = 0; i < 41; i++) {
@@ -510,7 +754,7 @@ function createTrack(rawMelody, name) {
         });
     }
 }
-
+// alert({{ soundfont_titles | safe }});
 createTrack({{ melody }}, 'melody');
 createTrack({{ arpeggio }}, 'arpeggio');
 createTrack({{ chords }}, 'chords');
@@ -526,3 +770,4 @@ for (let i in dawClassNoteContainers) {
     </script>
 </body>
 </html>
+{% endblock %}

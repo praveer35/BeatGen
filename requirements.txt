@@ -2,7 +2,8 @@ Flask==3.0.3
 Werkzeug==3.0.3
 midiutil==1.2.1
 numpy==2.0.1
-pygame==2.6.0
 hmmlearn==0.3.2
 scipy==1.13.1
 pretty_midi==0.2.10
+pyfluidsynth
+scikit-optimize

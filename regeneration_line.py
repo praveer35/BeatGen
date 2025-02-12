@@ -19,14 +19,13 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
-# import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 #time.sleep(2)
 
 # data_input = {
-#     'chords': [int(x) for x in '6 4 3 2'.split(' ')], 
-#     'rhythm': [1.0, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 1.0, 0.75, 0.25, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 2.0, 1.0, 0.5, 0.5],
-#     #'rhythm': lib.get_rhythm({'chords': [1,3,6,4]}),
+#     'chords': [5, 4, 3, 6],
+#     'new_rhythm': [[], [1.0, 1.0, 0.5, 1.0, 0.5]],
 #     'flutter': 4,
 #     'pitch_range': 8,
 #     'pitch_viscosity': 4,
@@ -40,7 +39,10 @@ os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 #     'nonhook_chord_boost_else': 0.5,
 #     'already_played_boost': 1.25,
 #     'matchability_noise': 0.1,
-#     'hmm_bias': 0.0
+#     'hmm_bias': 0.0,
+#     'current_line': [[3, 1.0], [1, 0.75], [2, 1.0], [0, 1.0], [-1, 0.25], [3, 0.5], [2, 1.0], [3, 1.0], [2, 1.0], [0, 0.5], [3, 1.0], [1, 0.75], [2, 1.0], [0, 1.0], [-1, 0.25], [3, 0.5], [2, 1.0], [3, 1.0], [2, 1.0], [0, 0.5]],
+#     'bar': 1,
+#     'isolated': True
 # }
 
 data_input = json.loads(sys.stdin.read())
@@ -48,7 +50,7 @@ data_input = json.loads(sys.stdin.read())
 # print(sys.stdin.read())
 
 chords = data_input['chords']
-flat_rhythm = data_input['rhythm']
+new_rhythm = data_input['new_rhythm']
 bars = len(chords)
 pitch_range = int(data_input['pitch_range'])
 pitch_viscosity = int(data_input['pitch_viscosity'])
@@ -63,21 +65,34 @@ nonhook_chord_boost_else = float(data_input['nonhook_chord_boost_else'])
 matchability_noise = float(data_input['matchability_noise'])
 already_played_boost = float(data_input['already_played_boost'])
 hmm_bias = float(data_input['hmm_bias'])
+current_line = data_input['current_line']
+bar = int(data_input['bar'])
+isolated = bool(data_input['isolated'])
 
 rhythm = []
 temp_rhythm = []
+current_line_measures = []
+temp_current_line_measures = []
 measure_sum = 0
-for i in range(len(flat_rhythm)):
+for i in range(len(current_line)):
     if measure_sum < 4:
-        temp_rhythm.append(flat_rhythm[i])
-        measure_sum += flat_rhythm[i]
+        temp_rhythm.append(current_line[i][1])
+        measure_sum += current_line[i][1]
+        temp_current_line_measures.append(current_line[i][0])
     else:
         rhythm.append(temp_rhythm)
-        temp_rhythm = [flat_rhythm[i]]
-        measure_sum = flat_rhythm[i]
+        current_line_measures.append(temp_current_line_measures)
+        temp_rhythm = [current_line[i][1]]
+        measure_sum = current_line[i][1]
+        temp_current_line_measures = [current_line[i][0]]
 if len(temp_rhythm) > 0:
     rhythm.append(temp_rhythm)
+    current_line_measures.append(temp_current_line_measures)
 
+for i in range(bars):
+    if i == bar or i > bar and not isolated:
+        rhythm[i] = new_rhythm[i]
+        continue
 
 # def bar_graph(vec, note, chord):
 
@@ -373,6 +388,9 @@ def loop():
     keynotes = [0] * bars
 
     for i in range(bars):
+        if i < bar or i != bar and isolated:
+            keynotes[i] = current_line_measures[i][0]
+            continue
         markov_vector = recalculate_markov_vector(last_note, chords[i], min_note, max_note)
         #bar_graph(markov_vector, last_note, chords[i])
         index = choose_index(markov_vector)
@@ -394,6 +412,10 @@ def loop():
     note = 0
 
     for i in range(bars):
+        if i < bar or i != bar and isolated:
+            measures.append(current_line_measures[i])
+            continue
+        # print('GENERATING NEW BAR')
         last_note = keynotes[i]
         temp_notes = []
         out = ""
@@ -445,88 +467,6 @@ def loop():
 
 loop()
 
-
-
-def set_repetitions():
-    matches = []
-
-    for i in range(4):
-        out = "measure " + str(i) + ":"
-        match_row = []
-        for j in range(4):
-            out += " " + str(match_index(measures[i], chords[j]))
-            match_row.append(match_index(measures[i], chords[j]))
-        matches.append(match_row)
-        #print(out)
-
-    matchability_noise = 0.1
-    forward_switch = False
-    backward_switch = False
-
-    switch02 = True
-    switch13 = True
-
-    if matches[0][2] + matchability_noise > matches[2][2]:
-        #print('measure 0 can repeat during measure 2')
-        #print(matches[0][2], matches[2][2])
-        forward_switch = True
-    if matches[2][0] + matchability_noise > matches[0][0]:
-        #print('measure 2 can repeat during measure 0')
-        #print(matches[0][2], matches[2][2])
-        backward_switch = True
-
-    if forward_switch and not backward_switch:
-        #print('measure 0 subbed into measure 2')
-        measures[2] = measures[0]
-        rhythm[2] = rhythm[0]
-    elif not forward_switch and backward_switch:
-        #print('measure 2 subbed into measure 0')
-        measures[0] = measures[2]
-        rhythm[0] = rhythm[2]
-    elif forward_switch and backward_switch:
-        if matches[0][0] + matches[0][2] > matches[2][0] + matches[2][2]:
-            #print('measure 0 subbed into measure 2')
-            measures[2] = measures[0]
-            rhythm[2] = rhythm[0]
-        else:
-            #print('measure 2 subbed into measure 0')
-            measures[0] = measures[2]
-            rhythm[0] = rhythm[2]
-    else:
-        switch02 = False
-
-    forward_switch = False
-    backward_switch = False
-
-    if matches[1][3] + matchability_noise > matches[3][3]:
-        #print('measure 1 can repeat during measure 3')
-        forward_switch = True
-    if matches[3][1] + matchability_noise > matches[1][1]:
-        #print('measure 3 can repeat during measure 1')
-        backward_switch = True
-
-    if forward_switch and not backward_switch:
-        #print('measure 1 subbed into measure 3')
-        measures[3] = measures[1]
-        rhythm[3] = rhythm[1]
-    elif not forward_switch and backward_switch:
-        #print('measure 3 subbed into measure 1')
-        measures[1] = measures[3]
-        rhythm[1] = rhythm[3]
-    elif forward_switch and backward_switch:
-        if matches[1][1] + matches[1][3] > matches[3][1] + matches[3][3]:
-            #print('measure 1 subbed into measure 3')
-            measures[3] = measures[1]
-            rhythm[3] = rhythm[1]
-        else:
-            #print('measure 3 subbed into measure 1')
-            measures[1] = measures[3]
-            rhythm[1] = rhythm[3]
-    else:
-        switch13 = False
-
-if bars == 4:
-    set_repetitions()
 
 FLAT_NOTES = list(chain.from_iterable(measures))
 FLAT_RHYTHM = list(chain.from_iterable(rhythm))
