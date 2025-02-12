@@ -20,6 +20,7 @@ import pty
 from itertools import chain
 
 import lib
+import midiutil
 #import db
 
 import fluidsynth
@@ -206,102 +207,36 @@ def play():
     bpm = request.json['bpm']
     channel_velocities = []
     tracks = []
-    sfids = []
-    soundfont_map = request.json['soundfontMap']
-    print(soundfont_map)
-    # flat_melody = []
-    # for measure in melody:
-    #     for note in measure:
-    #         flat_melody.append([20 - note[0], note[1], note[2]])
-    # arpeggio = measures['arpeggio']
-    # flat_arpeggio = []
-    # for measure in arpeggio:
-    #     for note in measure:
-    #         flat_arpeggio.append([20 - note[0], note[1], note[2]])
-    # chords = measures['chords']
-    # flat_chords = []
-    # for measure in chords:
-    #     for note in measure:
-    #         flat_chords.append([20 - note[0], note[1], note[2]])
-    synth = fluidsynth.Synth()
-    synth.start(driver="pulseaudio")
-    #synth.delete()
-    synth.start()
-    print('synth started')
     for key in measures.keys():
         synth_track = lib.synth_convert(measures[key])
         channel_velocities.append(velocities[key])
         tracks.append(synth_track)
-        sfids.append(synth.sfload('Soundfonts/'+soundfont_map[key]+'.sf2'))
-    # synth_melody = lib.synth_convert(measures['melody'])
-    # velocity_dict[synth_melody] = velocities['melody']
-    # synth_chords = lib.synth_convert(measures['chords'])
-    # velocity_dict[synth_chords] = velocities['chords']
-    # synth_arpeggio = lib.synth_convert(measures['arpeggio'])
-    # velocity_dict[synth_arpeggio] = velocities['arpeggio']
-    # synth_arpeggio = lib.synth_convert(flat_arpeggio)
-    # synth_chords = lib.synth_convert(flat_chords)
     print(tracks[0])
-    # tracks = [
-    #     synth_melody,
-    #     synth_chords,
-    #     synth_arpeggio
-    #     # synth_arpeggio,
-    #     # synth_chords
-    # ]
-    # soundfont = "Yamaha_C3_Grand_Piano.sf2"
-    # soundfonts = [
-    #     "Yamaha_C3_Grand_Piano",
-    #     "NylonFinger",
-    #     "Yamaha_C3_Grand_Piano"
-    # ]
-    # sfid = synth.sfload(soundfont)
-    # sfids = [synth.sfload('Soundfonts/' + soundfont + '.sf2') for soundfont in soundfonts]
-    # Select program for each channel
-    for channel in range(len(tracks)):
-        synth.program_select(channel, sfids[channel], 0, 0)
-    async def play_note_on_channel(synth, note, start_time, end_time, channel):
-        await asyncio.sleep(start_time * 60 / bpm)
-        synth.noteon(channel, note, channel_velocities[channel])
-        await asyncio.sleep((end_time - start_time) * 60 / bpm)
-        synth.noteoff(channel, note)
-    async def play_track(synth, track, channel):
-        tasks = [play_note_on_channel(synth, note, start_time, end_time, channel) for note, start_time, end_time in track]
-        await asyncio.gather(*tasks)
-    async def main_player():
-        tasks = [play_track(synth, track, channel) for channel, track in enumerate(tracks)]
-        await asyncio.gather(*tasks)
-        synth.delete()
-    # Run the main function
-    asyncio.run(main_player())
-    # sfid = synth.sfload(soundfont)
-    # for channel in range(len(tracks) + 1):
-    #     synth.program_select(channel, sfid, 0, 0)
-    # async def play_track(synth, track, channel):
-    #     for note, start_time, duration in track:
-    #         await asyncio.sleep(start_time * 60/bpm)
-    #         synth.noteon(channel, note, 100 if track == synth_melody else 0)
-    #         await asyncio.sleep(duration * 60/bpm)
-    #         synth.noteoff(channel, note)
-    # async def play_chords(synth, chords):
-    #     i = 0
-    #     while i < len(chords):
-    #         print('playing chord')
-    #         synth.noteon(1, chords[i][0], 100)
-    #         synth.noteon(1, chords[i+1][0], 100)
-    #         synth.noteon(1, chords[i+2][0], 100)
-    #         await asyncio.sleep(4 * 60/bpm)
-    #         synth.noteoff(1, chords[i][0])
-    #         synth.noteoff(1, chords[i+1][0])
-    #         synth.noteoff(1, chords[i+2][0])
-    #         i += 3
-    # async def main_player():
-    #     tasks = [play_track(synth, track, channel) for channel, track in enumerate(tracks)]
-    #     tasks.append(play_chords(synth, synth_chords))
-    #     await asyncio.gather(*tasks)
-    #     synth.delete()
-    # asyncio.run(main_player())
-    return json.dumps({'data': 'success'})
+    # Create a MIDI object
+    midi = MIDIFile(len(tracks))
+
+    # Add track names and set tempo
+    for i, track in enumerate(tracks):
+        midi.addTrackName(i, 0, f"Track {i + 1}")
+        midi.addTempo(i, 0, 120)  # Setting the tempo to 120 BPM
+
+    # Add notes to the MIDI object
+    for i, track in enumerate(tracks):
+        for note, start_time, end_time in track:
+            duration = end_time - start_time
+            midi.addNote(i, 0, note, start_time, duration, channel_velocities[i])  # Channel 0, velocity 100
+
+    # Write the MIDI file to disk
+    with open("output.mid", "wb") as output_file:
+        midi.writeFile(output_file)
+
+    # Function to convert MIDI to WAV
+    command = ["fluidsynth", "-T", "wav", "-F", "output.wav", "Soundfonts/Yamaha_C3_Grand_Piano.sf2", "output.mid"]
+    subprocess.run(command, check=True)
+
+    return send_file('output.wav', mimetype='audio/wav', as_attachment=True)
+
+    #return json.dumps({'data': 'success', 'wav_file': 'output.wav'})
 
 # @app.route('/play', methods=['POST'])
 # def play():
