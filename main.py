@@ -121,7 +121,12 @@ def create():
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     cursor.execute('SELECT vector FROM weights WHERE user_id = ?', (session['user_id'],))
-    x = cursor.fetchone()[0].split(' ')
+    res = cursor.fetchone()
+    x = None
+    if res == None or len(res) == 0:
+        x = '4 5.0 0.5 0.5 0.0 3 1 1 0.5 1.25'.split(' ')
+    else:
+        x = res[0].split(' ')
     print(x)
     conn.close()
     return render_template('create.html', x=x)
