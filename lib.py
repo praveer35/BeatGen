@@ -50,13 +50,16 @@ def get_voice_line(json_data):
         return get_voice_line(json_data)
     
 def get_regeneration_line(json_data):
+    print('try')
     p = Popen(['python3', 'regeneration_line.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
     melody_stdout_data, err = p.communicate(input=json.dumps(json_data))
     if err: print('VOICE_LINE_ERR:', err)
+    print(json.loads(melody_stdout_data))
     try:
+        print(melody_stdout_data)
         return json.loads(melody_stdout_data)
     except:
-        return get_voice_line(json_data)
+        return get_regeneration_line(json_data)
 
 def get_arpeggio(json_data):
     chords = json_data['chords']
@@ -64,13 +67,41 @@ def get_arpeggio(json_data):
     json_data['rhythm'] = [0.5] * 8
     arpeggio_raw = get_voice_line(json_data)['melody']
     arpeggio_mid = [arpeggio_raw[i][0] for i in range(len(arpeggio_raw))]
-    arpeggio_mid *= len(chords)
-    print(arpeggio_mid)
-    for i in range(len(chords) * 8):
-        arpeggio_mid[i] += chords[i // 8] - chords[0]
-    print(arpeggio_mid)
-    arpeggio = [[i, 0.5] for i in arpeggio_mid]
+    arpeggio_mid *= len(chords) * 2
+    # print(arpeggio_mid)
+    for i in range(len(chords) * (8 * 2)):
+        arpeggio_mid[i] += chords[i // (8 * 2)] - chords[0]
+    # print(arpeggio_mid)
+    arpeggio = [[i, (0.5 / 2)] for i in arpeggio_mid]
+    json_data['chords'] = chords
     return arpeggio
+
+def get_bass(json_data):
+    chords = json_data['chords']
+    pattern = json_data['pattern']
+    bass = []
+    for chord in chords:
+        note = ((chord + 1) % 7 - 1) - 6
+        if pattern == 0:
+            for _ in range(4):
+                bass.append([note, 0.5])
+                bass.append([note - 7, 0.5])
+        elif pattern == 1:
+            for _ in range(4):
+                bass.append([note - 7, 0.5])
+                bass.append([note - 7, 0.5])
+    return bass
+
+def get_drums(json_data):
+    bars = json_data['bars']
+    pattern = json_data['pattern']
+    drums = []
+    for _ in range(bars):
+        if pattern == 0:
+            for _ in range(4):
+                drums.append([0, 0.5])
+                drums.append([-40, 0.5])
+    return drums
 
 def get_rhythm(json_data):
     p = Popen(['python3', 'rhythm.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)

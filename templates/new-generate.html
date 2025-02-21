@@ -121,8 +121,10 @@ body {
         <p>Hide the following:</p>
         <button onclick="hideToggle('melody')">melody</button>
         <button onclick="hideToggle('arpeggio')">arpeggio</button>
+        <button onclick="hideToggle('bass')">bass</button>
         <button onclick="hideToggle('chords')">chords</button>
-        <p>BPM: <input id="bpm" type="text" value="120"></p>
+        <button onclick="hideToggle('drums')">drums</button>
+        <p>BPM: <input id="bpm" type="text" value="150"></p>
         <p>Play: (WAIT UP TO 5 SEC)</p>
         <button onclick="play()">Play</button>
         <p>Download:</p>
@@ -228,6 +230,17 @@ let selectedNote = null;
 let dawContainers = {};
 let measures = {};
 const soundfontMap = {}; // Stores { name -> selected soundfont title }
+//console.log({{ all_input_data | safe }});
+{% if MODE == 'GENERATE': %}
+const all_input_data = {{ all_input_data | safe }};
+{% else: %}
+const all_input_data = {
+    melody: {},
+    arpeggio: {},
+    bass: {},
+    drums: {}
+};
+{% endif %}
 //const dawContainers = [];
 
 let bars = {{ bars }};
@@ -242,14 +255,19 @@ let bars = {{ bars }};
 // document.getElementById('melody').textContent = melody;
 
 function play() {
-    soundfontMap
+    velocities = {};
+    for (const track_name of Object.keys(measures)) {
+        velocities[track_name] = parseInt(document.getElementById(track_name + '-velocity').value);
+    }
     data = {
         measures: measures,
-        velocities: {
-            'melody': parseInt(document.getElementById('melody-velocity').value),
-            'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
-            'chords': parseInt(document.getElementById('chords-velocity').value)
-        },
+        // velocities: {
+        //     'melody': parseInt(document.getElementById('melody-velocity').value),
+        //     'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
+        //     'bass': parseInt(document.getElementById('bass-velocity').value),
+        //     'chords': parseInt(document.getElementById('chords-velocity').value)
+        // },
+        velocities: velocities,
         bpm: parseInt(document.getElementById('bpm').value),
         soundfontMap: soundfontMap
     }
@@ -278,14 +296,20 @@ function play() {
 }
 
 function save() {
+    velocities = {};
+    for (const track_name of Object.keys(measures)) {
+        velocities[track_name] = parseInt(document.getElementById(track_name + '-velocity').value);
+    }
     data = {
         measures: measures,
-        velocities: {
-            'melody': parseInt(document.getElementById('melody-velocity').value),
-            'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
-            'chords': parseInt(document.getElementById('chords-velocity').value)
-        },
-        bpm: 120
+        // velocities: {
+        //     'melody': parseInt(document.getElementById('melody-velocity').value),
+        //     'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
+        //     'bass': parseInt(document.getElementById('bass-velocity').value),
+        //     'chords': parseInt(document.getElementById('chords-velocity').value)
+        // },
+        velocities: velocities,
+        bpm: parseInt(document.getElementById('bpm').value)
     }
     console.log(data);
     fetch('/save', {
@@ -318,10 +342,18 @@ function save() {
 }
 
 function train() {
+    // data = {
+    //     melody: JS_TO_PYTHON_MELODY_CONVERTER(measures['melody']),
+    //     chords: {{ chords }},
+    //     generation_name: document.getElementById('generation_name').value
+    // }
     data = {
-        melody: JS_TO_PYTHON_MELODY_CONVERTER(measures['melody']),
         chords: {{ chords }},
         generation_name: document.getElementById('generation_name').value
+    }
+    for (const track_name of Object.keys(measures)) {
+        if (track_name == "chords") { continue; }
+        data[track_name] = JS_TO_PYTHON_MELODY_CONVERTER(measures[track_name]);
     }
     console.log(data);
     document.getElementById('generation_button').innerHTML = "Saved.";
@@ -349,8 +381,9 @@ function regenerate() {
         chords: {{ chords }},
         bar: bar,
         bar_count: bars,
-        isolated: !(document.getElementById('regenerate-after').checked)
-    }
+        isolated: !(document.getElementById('regenerate-after').checked),
+        data_input: all_input_data[track_name]
+    };
     console.log(data);
     fetch('/regenerate', {
         method: 'POST',
@@ -757,7 +790,9 @@ function createTrack(rawMelody, name) {
 // alert({{ soundfont_titles | safe }});
 createTrack({{ melody }}, 'melody');
 createTrack({{ arpeggio }}, 'arpeggio');
+createTrack({{ bass }}, 'bass');
 createTrack({{ chords }}, 'chords');
+// createTrack({{ drums }}, 'drums');
 //createTrack(measures, 'arpeggio');
 //createTrack(measures, 'chords');
 

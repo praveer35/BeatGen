@@ -89,6 +89,8 @@ if len(temp_rhythm) > 0:
     rhythm.append(temp_rhythm)
     current_line_measures.append(temp_current_line_measures)
 
+# print(rhythm)
+
 for i in range(bars):
     if i == bar or i > bar and not isolated:
         rhythm[i] = new_rhythm[i]
@@ -164,7 +166,7 @@ def getchords(key, bars):
 
 #print(chords)
 
-
+loop_called = False
 
 
 #if exit: os._exit(0)
@@ -414,9 +416,17 @@ def loop():
     for i in range(bars):
         if i < bar or i != bar and isolated:
             measures.append(current_line_measures[i])
+            last_note = current_line_measures[i][-1]
             continue
         # print('GENERATING NEW BAR')
-        last_note = keynotes[i]
+        markov_vector = recalculate_markov_vector(last_note, chords[i], min_note, max_note)
+        #bar_graph(markov_vector, last_note, chords[i])
+        index = choose_index(markov_vector)
+        #print(index - 7)
+        last_note += (index - 7)
+        #print(vn(last_note), chords[i])
+        keynotes[i] = last_note
+        #last_note = keynotes[i]
         temp_notes = []
         out = ""
         temp_notes.append(last_note)
@@ -436,6 +446,7 @@ def loop():
             markov_vector2 = recalculate_markov_vector2(last_note, chords[i], delta, min_note, max_note, notes_played, rhythm[i][j+1])
             #bar_graph(markov_vector2, last_note, chords[i])
             if len(markov_vector2) == 1:
+                loop_called = True
                 loop()
                 return
             hmm_vector = get_hmm_vector(FLAT_NOTES)
@@ -476,10 +487,14 @@ FLAT_RHYTHM = list(chain.from_iterable(rhythm))
 #     'melody': ' '.join([vn(x) for x in FLAT_NOTES])
 # }
 
-if len(FLAT_NOTES) != len(FLAT_RHYTHM):
+if len(FLAT_NOTES) < len(FLAT_RHYTHM):
     print('notes:', len(FLAT_NOTES), file=sys.stderr)
     print('rhythm:', len(FLAT_RHYTHM), file=sys.stderr)
-melody = [[FLAT_NOTES[i], FLAT_RHYTHM[i]] for i in range(len(FLAT_NOTES))]
+    print(measures)
+    if loop_called: print('loop called')
+    else: print('loop not called')
+
+melody = [[FLAT_NOTES[i], FLAT_RHYTHM[i]] for i in range(len(FLAT_RHYTHM))]
 
 sensibility_index = 100 * math.pow(sensibility_index, 1/len(bayesian_chosen_probabilities))
 average_entropy *= 100/len(bayesian_chosen_probabilities)

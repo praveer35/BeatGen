@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Music Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: radial-gradient(circle at top left, #1e1e3f, #0d0d1a);
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        /* Smooth transition for fade-in effect */
+        .fade-in {
+            transition: opacity 1s ease-out, transform 1s ease-out;
+        }
+    </style>
+</head>
+<body class="text-white font-sans">
+
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 w-full bg-black bg-opacity-80 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+                <a href="">BeatGen</a>
+            </h1>
+            <ul class="hidden md:flex space-x-6">
+                <li><a href="#hero" class="hover:text-blue-400">Home</a></li>
+                <li><a href="#about" class="hover:text-blue-400">About</a></li>
+                <li><a href="#demo" class="hover:text-blue-400">Demo</a></li>
+                <li><a href="#pricing" class="hover:text-blue-400">Pricing</a></li>
+            </ul>
+            <a href="#cta" class="hidden md:block px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md text-lg font-semibold hover:opacity-90">
+                Get Started
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="h-screen flex flex-col justify-center items-center text-center px-6 pt-20"
+        style="
+            background: url('https://drive.google.com/thumbnail?id=1Yv4io6gPhq8vKBZBcCdhRfnx8H_xrpJj&sz=w1000') no-repeat center center;
+            background-size: cover;
+            background-blend-mode: overlay;
+            background-color: rgba(10, 10, 25, 0.95); /* Dark overlay to ensure readability */
+        ">
+        <h1 class="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text leading-tight">
+            Generate Music with AI. <br />
+            <span class="text-yellow-300">Lightning</span> Speed.
+        </h1><br />
+        <p class="mt-4 text-lg text-gray-300 max-w-lg">
+            Experience AI-powered music composition. Instant, unique, and crafted just for you.
+        </p>
+        <a href="#demo" class="mt-6 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md text-lg font-semibold hover:opacity-90">
+            Listen to a Demo
+        </a>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-16 px-6 text-center fade-in opacity-0 translate-y-10">
+        <h2 class="text-3xl font-semibold">Why Choose Our AI Music Generator?</h2>
+        <p class="mt-4 text-gray-300 max-w-2xl mx-auto">
+            Our AI creates beautiful, original compositions in seconds. Whether you need background music, inspiration, or full tracks, we've got you covered.
+        </p>
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-6 bg-gray-800 rounded-lg">
+                <h3 class="text-xl font-semibold">🎼 Unique Compositions</h3>
+                <p class="text-gray-400 mt-2">Every piece is uniquely generated—never repeated.</p>
+            </div>
+            <div class="p-6 bg-gray-800 rounded-lg">
+                <h3 class="text-xl font-semibold">⚡ Instant Generation</h3>
+                <p class="text-gray-400 mt-2">Get high-quality tracks in seconds.</p>
+            </div>
+            <div class="p-6 bg-gray-800 rounded-lg">
+                <h3 class="text-xl font-semibold">🎧 Multiple Genres</h3>
+                <p class="text-gray-400 mt-2">From classical to electronic, choose your style.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="py-16 px-6 text-center bg-gradient-to-b from-gray-900 to-black fade-in opacity-0 translate-y-10">
+        <h2 class="text-3xl font-semibold">🎵 Listen to AI-Generated Music</h2>
+        <p class="mt-4 text-gray-300">Here’s a sample of what our AI can create.</p>
+        <div class="mt-6">
+            <audio controls class="w-full max-w-md mx-auto">
+                <source src="your-music-file.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-16 px-6 text-center fade-in opacity-0 translate-y-10">
+        <h2 class="text-3xl font-semibold">💰 Choose Your Plan</h2>
+        <p class="mt-4 text-gray-300">Flexible pricing for every level of music creation.</p>
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Free Plan -->
+            <div class="p-6 bg-gray-800 rounded-lg border border-gray-700">
+                <h3 class="text-xl font-semibold">🎵 Free Plan</h3>
+                <p class="text-4xl font-bold mt-2">$0</p>
+                <ul class="mt-4 space-y-2 text-gray-400">
+                    <li>✔ 5 Free Tracks / Month</li>
+                    <li>✔ Basic AI Features</li>
+                    <li>❌ No Commercial Use</li>
+                </ul>
+                <button class="mt-6 px-5 py-2 bg-gray-600 rounded-md text-lg font-semibold hover:opacity-90">
+                    Get Started
+                </button>
+            </div>
+            <!-- Pro Plan -->
+            <div class="p-6 bg-blue-700 rounded-lg border border-blue-500">
+                <h3 class="text-xl font-semibold">🔥 Pro Plan</h3>
+                <p class="text-4xl font-bold mt-2">$9.99/mo</p>
+                <ul class="mt-4 space-y-2 text-gray-200">
+                    <li>✔ Unlimited Tracks</li>
+                    <li>✔ Advanced AI Features</li>
+                    <li>✔ Commercial Use Allowed</li>
+                </ul>
+                <button class="mt-6 px-5 py-2 bg-black rounded-md text-lg font-semibold hover:opacity-90">
+                    Subscribe Now
+                </button>
+            </div>
+            <!-- Premium Plan -->
+            <div class="p-6 bg-purple-700 rounded-lg border border-purple-500">
+                <h3 class="text-xl font-semibold">🚀 Premium Plan</h3>
+                <p class="text-4xl font-bold mt-2">$19.99/mo</p>
+                <ul class="mt-4 space-y-2 text-gray-200">
+                    <li>✔ Everything in Pro</li>
+                    <li>✔ Custom AI Models</li>
+                    <li>✔ Priority Support</li>
+                </ul>
+                <button class="mt-6 px-5 py-2 bg-black rounded-md text-lg font-semibold hover:opacity-90">
+                    Get Premium
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section id="cta" class="py-16 px-6 text-center fade-in opacity-0 translate-y-10">
+        <h2 class="text-3xl font-semibold">Ready to Create Your Own Music?</h2>
+        <p class="mt-4 text-gray-300">Join thousands of creators using AI-generated music today.</p><br /><br />
+        <a href="#" class="mt-6 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 rounded-md text-lg font-semibold hover:opacity-90">
+            Get Started for Free
+        </a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-gray-400">
+        © 2025 BeatGen | All Rights Reserved
+    </footer>
+
+    <!-- JavaScript for Scroll Animation -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const sections = document.querySelectorAll(".fade-in");
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("opacity-100", "translate-y-0");
+                    }
+                });
+            }, {
+                threshold: 0.2, // Trigger when 20% of the section is visible
+            });
+
+            sections.forEach((section) => {
+                observer.observe(section);
+            });
+        });
+    </script>
+
+</body>
+</html>

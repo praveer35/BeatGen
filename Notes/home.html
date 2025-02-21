@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeatGen - App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: radial-gradient(circle at top left, #1e1e3f, #0d0d1a);
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="text-white font-sans">
+
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 w-full bg-black bg-opacity-80 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+            <!-- Left: Logo -->
+            <h1 class="hidden md:flex text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+                BeatGen
+            </h1>
+
+            <!-- Center: Navigation Links -->
+            <div class="flex-grow flex justify-center">
+                <ul class="hidden md:flex space-x-8">
+                    <li><a href="#" class="hover:text-blue-400">Home</a></li>
+                    <li><a href="#" class="hover:text-blue-400">About</a></li>
+                    <!-- <li><a href="#" class="hover:text-blue-400">Friends</a></li> -->
+                    <li><a href="#" class="hover:text-blue-400">Upgrade</a></li>
+                    <li><a href="#" class="hover:text-blue-400">Profile</a></li>
+                </ul>
+            </div>
+
+            <!-- Right: Create Button -->
+            <a href="#" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md text-lg font-semibold hover:opacity-90">
+                Create +
+            </a>
+        </div>
+    </nav>
+
+    <br /><br /><br />
+    <button id="menu-toggle" class="md:hidden fixed top-4 left-4 z-50 text-black bg-white px-3 py-2 rounded-md">
+        ☰
+    </button>   
+
+    <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="md:w-80 w-64 bg-gradient-to-b from-purple-900 to-blue-900 h-full fixed top-0 p-6 text-white ml-[-275px] md:ml-0 transition-all duration-300 ease-in-out">
+        <br /><br /><br />
+
+        <!-- Pending Collaboration Requests -->
+        <!-- <div class="mb-8">
+            <h2 class="text-lg font-semibold text-gray-300 mb-3">Pending Collaboration Requests</h2>
+            <ul class="space-y-3">
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>🔥 Trap Beat Collab</span>
+                    <button class="bg-blue-500 px-2 py-1 text-xs rounded">Accept</button>
+                </li>
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>🎸 Acoustic Jam</span>
+                    <button class="bg-blue-500 px-2 py-1 text-xs rounded">Accept</button>
+                </li>
+            </ul>
+        </div> -->
+
+        <!-- Recent Projects -->
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold text-gray-300 mb-3">Recent Projects</h2>
+            <ul class="space-y-3">
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>Lo-Fi Chill</span>
+                    <span class="text-xs text-gray-400">2 days ago</span>
+                </li>
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>Drum Loop</span>
+                    <span class="text-xs text-gray-400">5 days ago</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Starred Projects -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-300 mb-3">Starred Projects</h2>
+            <ul class="space-y-3">
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>Synthwave Jam</span>
+                    <button class="text-yellow-400">★</button>
+                </li>
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>Orchestral Melody</span>
+                    <button class="text-yellow-400">★</button>
+                </li>
+            </ul>
+        </div>
+    </aside> 
+
+    <main class="flex-1 pl-12 pt-6 md:ml-80 ml-0 w-full">
+        <!-- Main Content -->
+<!-- Main Content -->
+<section class="flex flex-col justify-start items-start text-left px-6">
+    <h1 class="text-6xl text-white font-bold text-transparent bg-clip-text">
+        Create
+    </h1>
+    <p class="mt-4 text-lg text-gray-300 max-w-lg">
+        Create AI-generated beats instantly.
+    </p>
+    <a href="#" class="mt-6 px-10 py-4 text-xl bg-gradient-to-r from-blue-500 to-purple-600 rounded-md font-semibold hover:opacity-90 shadow-lg">
+        Generate Something New
+    </a>
+</section>
+
+<!-- Collaboration Section -->
+<!-- <section class="py-20 px-6">
+    <h2 class="text-3xl font-semibold text-left">Collaborate</h2>
+    <p class="mt-4 text-gray-300 text-left">Work together with friends to create amazing beats.</p>
+
+    <div class="mt-8 flex justify-start space-x-6">
+        <a href="#" class="px-8 py-3 text-lg bg-gradient-to-r from-green-500 to-teal-600 rounded-md font-semibold hover:opacity-90 shadow-lg">
+            Start a Collaborative Project
+        </a>
+
+        <a href="#" class="px-8 py-3 text-lg bg-gradient-to-r from-purple-500 to-pink-600 rounded-md font-semibold hover:opacity-90 shadow-lg">
+            Manage Friends
+        </a>
+    </div>
+</section> -->
+
+    <!-- Your Projects Section -->
+    <section class="py-20 px-6 text-left">
+        <h2 class="text-3xl font-semibold">Your Projects</h2>
+        <p class="mt-4 text-gray-300">Manage your previously generated beats.</p>
+<!-- Project Rows -->
+<div class="mt-12 space-y-8 w-11/12">
+    <!-- Project 1 -->
+    <div class="flex justify-between items-center bg-gray-800 rounded-lg p-6 shadow-md">
+        <div class="flex items-center space-x-6">
+            <span class="text-gray-400">2025-02-16</span>
+            <button class="text-blue-500 hover:text-blue-300">▶️</button>
+            <span class="text-lg font-medium">Chillwave Beat</span>
+            <!-- <span class="text-gray-500">🌊</span> -->
+        </div>
+        <div class="flex space-x-6">
+            <button class="text-red-500 hover:text-red-300">✏️</button>
+            <button class="text-gray-400 hover:text-white">⋮</button>
+        </div>
+    </div>
+
+    <!-- Project 2 -->
+    <div class="flex justify-between items-center bg-gray-800 rounded-lg p-6 shadow-md">
+        <div class="flex items-center space-x-6">
+            <span class="text-gray-400">2025-02-10</span>
+            <button class="text-blue-500 hover:text-blue-300">▶️</button>
+            <span class="text-lg font-medium">Lo-Fi Groove</span>
+            <!-- <span class="text-gray-500">🌊</span> -->
+        </div>
+        <div class="flex space-x-6">
+            <button class="text-red-500 hover:text-red-300">✏️</button>
+            <button class="text-gray-400 hover:text-white">⋮</button>
+        </div>
+    </div>
+
+    <!-- Project 3 -->
+    <div class="flex justify-between items-center bg-gray-800 rounded-lg p-6 shadow-md">
+        <div class="flex items-center space-x-6">
+            <span class="text-gray-400">2025-01-28</span>
+            <button class="text-blue-500 hover:text-blue-300">▶️</button>
+            <span class="text-lg font-medium">Synthwave Jam</span>
+            <!-- <span class="text-gray-500">🌊</span> -->
+        </div>
+        <div class="flex space-x-6">
+            <button class="text-red-500 hover:text-red-300">✏️</button>
+            <button class="text-gray-400 hover:text-white">⋮</button>
+        </div>
+    </div>
+</div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-10 text-center text-gray-400">
+        © 2025 BeatGen | All Rights Reserved
+    </footer>
+</main>
+</div>
+    <script>
+        const menuToggle = document.getElementById("menu-toggle");
+        const sidebar = document.getElementById("sidebar");
+    
+        // Add event listener to the hamburger button
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('ml-[-275px]');  // Toggles the margin to slide in/out
+        });
+    </script>
+</body>
+</html>

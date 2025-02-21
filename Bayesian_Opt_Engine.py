@@ -203,6 +203,8 @@ class Bayesian_Opt_Engine:
             geometric_mean = math.pow(np.prod(bayesian_probabilities), 1/len(bayesian_probabilities))
             confidence_index = 0 if 0 in bayesian_probabilities else 100 / (1 + math.pow(np.prod([(1-x) / x for x in bayesian_probabilities]), 1/len(bayesian_probabilities)))
 
+            print(bayesian_probabilities)
+
             return -geometric_mean, -confidence_index
 
         return loop()

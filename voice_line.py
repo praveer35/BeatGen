@@ -498,32 +498,32 @@ def set_repetitions():
     forward_switch = False
     backward_switch = False
 
-    if matches[1][3] + matchability_noise > matches[3][3]:
-        #print('measure 1 can repeat during measure 3')
-        forward_switch = True
-    if matches[3][1] + matchability_noise > matches[1][1]:
-        #print('measure 3 can repeat during measure 1')
-        backward_switch = True
+    # if matches[1][3] + matchability_noise > matches[3][3]:
+    #     #print('measure 1 can repeat during measure 3')
+    #     forward_switch = True
+    # if matches[3][1] + matchability_noise > matches[1][1]:
+    #     #print('measure 3 can repeat during measure 1')
+    #     backward_switch = True
 
-    if forward_switch and not backward_switch:
-        #print('measure 1 subbed into measure 3')
-        measures[3] = measures[1]
-        rhythm[3] = rhythm[1]
-    elif not forward_switch and backward_switch:
-        #print('measure 3 subbed into measure 1')
-        measures[1] = measures[3]
-        rhythm[1] = rhythm[3]
-    elif forward_switch and backward_switch:
-        if matches[1][1] + matches[1][3] > matches[3][1] + matches[3][3]:
-            #print('measure 1 subbed into measure 3')
-            measures[3] = measures[1]
-            rhythm[3] = rhythm[1]
-        else:
-            #print('measure 3 subbed into measure 1')
-            measures[1] = measures[3]
-            rhythm[1] = rhythm[3]
-    else:
-        switch13 = False
+    # if forward_switch and not backward_switch:
+    #     #print('measure 1 subbed into measure 3')
+    #     measures[3] = measures[1]
+    #     rhythm[3] = rhythm[1]
+    # elif not forward_switch and backward_switch:
+    #     #print('measure 3 subbed into measure 1')
+    #     measures[1] = measures[3]
+    #     rhythm[1] = rhythm[3]
+    # elif forward_switch and backward_switch:
+    #     if matches[1][1] + matches[1][3] > matches[3][1] + matches[3][3]:
+    #         #print('measure 1 subbed into measure 3')
+    #         measures[3] = measures[1]
+    #         rhythm[3] = rhythm[1]
+    #     else:
+    #         #print('measure 3 subbed into measure 1')
+    #         measures[1] = measures[3]
+    #         rhythm[1] = rhythm[3]
+    # else:
+    #     switch13 = False
 
 if bars == 4:
     set_repetitions()
