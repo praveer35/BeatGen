@@ -75,6 +75,7 @@
             <h2 class="text-lg font-semibold text-gray-300 mb-3">Recent Projects</h2>
             <ul class="space-y-3">
                 {% for i in range(3): %}
+                {% if x[i]: %}
                 <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
                     <span>{{ x[i][2] }}</span>
                     <span class="text-xs text-gray-400">{{ x[i][1][:-9] }}</span>
@@ -84,6 +85,7 @@
                         </button>
                     </a>
                 </li>
+                {% endif %}
                 {% endfor %}
                 <!-- <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
                     <span>Lo-Fi Chill</span>
