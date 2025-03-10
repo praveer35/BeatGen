@@ -7,3 +7,4 @@ scipy==1.13.1
 pretty_midi==0.2.10
 pyfluidsynth
 scikit-optimize
+requests

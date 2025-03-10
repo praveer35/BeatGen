@@ -56,7 +56,7 @@ def get_voice_line(json_data):
         gen = VoiceLineGenerator()
         return gen.engine(json_data)
     except:
-        return gen.engine(json_data)
+        return get_voice_line(json_data)
 
     
 def get_regeneration_line(json_data):
@@ -74,7 +74,7 @@ def get_regeneration_line(json_data):
         regen = VoiceLineRegenerator()
         return regen.engine(json_data)
     except:
-        return regen.engine(json_data)
+        return get_regeneration_line(json_data)
 
 def get_arpeggio(json_data):
     chords = json_data['chords']

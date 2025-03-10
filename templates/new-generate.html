@@ -130,8 +130,8 @@ body {
         <button onclick="hideToggle('chords')">chords</button>
         <!-- <button onclick="hideToggle('drums')">drums</button> -->
         <p>BPM: <input id="bpm" type="text" value="180" size="5"></p>
-        <p>Transpose: <input id="transpose" type="text" value="6" size="5"></p>
-        <p>Play: <button onclick="play(false)">Play</button><button onclick="play(true)">Loop</button><button onclick="stop()">Stop</button></p>
+        <p>Transpose: <input id="transpose" type="text" value="0" size="5"></p>
+        <p>Play: <button onclick="play(false)">Play</button></p>
         <p>Download: <button onclick="save()">Download</button></p>
         {% if MODE == 'GENERATE': %}
         <p>Save Preferences:</p>

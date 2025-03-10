@@ -217,26 +217,49 @@
             button.addEventListener('click', function() {
                 // Get the generation ID from the data attribute of the clicked button
                 var generationId = this.getAttribute('data-generation-id');
-                
-                // Send the POST request with the generation ID
                 fetch("{{ url_for('play_saved', generation_id='') }}" + generationId, {
-                    method: "POST",   // Set the method to POST
+                    method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json', // Send data as JSON
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
                         generation_id: generationId // Pass the generation ID in the body
                     })
                 })
-                .then(response => response.json())  // Parse the JSON response
-                .then(data => {
-                    // Handle the response here
-                    console.log(data);
-                    // alert('Track is being played!');
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok.');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const audioUrl = URL.createObjectURL(blob);
+                    const audio = new Audio(audioUrl);
+                    audio.play();
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('There was a problem with the fetch operation:', error);
                 });
+            // }
+            //     // Send the POST request with the generation ID
+            //     fetch("{{ url_for('play_saved', generation_id='') }}" + generationId, {
+            //         method: "POST",   // Set the method to POST
+            //         headers: {
+            //             'Content-Type': 'application/json', // Send data as JSON
+            //         },
+            //         body: JSON.stringify({
+            //             generation_id: generationId // Pass the generation ID in the body
+            //         })
+            //     })
+            //     .then(response => response.json())  // Parse the JSON response
+            //     .then(data => {
+            //         // Handle the response here
+            //         console.log(data);
+            //         // alert('Track is being played!');
+            //     })
+            //     .catch(error => {
+            //         console.error('Error:', error);
+            //     });
             });
         });
     </script>
