@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create AI Music</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: radial-gradient(circle at top left, #1e1e3f, #0d0d1a);
+            background-attachment: fixed;  /* Keeps the background in place */
+            background-size: cover;  /* Ensures it covers the entire viewport */
+            color: white;
+        }
+        section {
+            padding-left: 15%;
+            padding-right: 15%;
+        }
+        p {
+            text-indent:50px;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="h-screen">
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 w-full bg-black bg-opacity-80 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+            <!-- Left: Logo -->
+             <a href="{{ url_for('home') }}">
+            <h1 class="hidden md:flex text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+                BeatGen
+            </h1>
+            </a>
+
+            <!-- Center: Navigation Links -->
+            <div class="flex-grow flex justify-center">
+                <ul class="hidden md:flex space-x-8">
+                    <li><a href="{{ url_for('home') }}" class="hover:text-blue-400">Home</a></li>
+                    <li><a href="{{ url_for('about') }}" class="hover:text-blue-400">About</a></li>
+                    <!-- <li><a href="#" class="hover:text-blue-400">Friends</a></li> -->
+                    <li><a href="{{ url_for('upgrade') }}" class="hover:text-blue-400">Upgrade</a></li>
+                    <li><a href="{{ url_for('profile') }}" class="hover:text-blue-400">Profile</a></li>
+                </ul>
+            </div>
+
+            <!-- Right: Create Button -->
+            <a href="{{ url_for('create') }}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md text-lg font-semibold hover:opacity-90">
+                Create +
+            </a>
+        </div>
+    </nav>
+    <!-- Header Section -->
+    <section class="text-left py-20">
+        <h1 class="text-5xl mt-12 font-bold text-center text-white bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+            About
+        </h1>
+        <br />
+        <h2 class="text-2xl font-semibold mt-6">Empowering Musical Creativity</h2>
+        <p class="text-lg mt-2">
+            BeatGen is a low-latency musical ideation engine designed to enhance the creative process for both amateur and professional producers. 
+            Unlike conventional AI-driven music generators that fully automate composition, BeatGen serves as a collaborative tool, allowing users to maintain artistic control while benefiting from real-time inspiration.
+        </p>
+    
+        <h2 class="text-2xl font-semibold mt-6">The Philosophy Behind BeatGen</h2>
+        <p class="text-lg mt-2">
+            The founders of BeatGen believe that AI should augment creativity, not replace it. 
+            Many AI music tools focus on generating fully automated compositions, often sacrificing human expression for efficiency. 
+            BeatGen takes a different approach—our technology helps producers explore new ideas without surrendering transparency or control to a black-box AI system.
+        </p>
+        <p class="text-lg mt-2">
+            Whether you're a seasoned professional refining your next hit or an amateur producer looking for fresh inspiration, BeatGen acts as your creative partner, offering structured yet flexible musical guidance.
+        </p>
+    
+        <h2 class="text-2xl font-semibold mt-6">Built for Speed and Flexibility</h2>
+        <p class="text-lg mt-2">
+            BeatGen leverages advanced computational techniques to ensure real-time responsiveness, allowing users to iterate and experiment without delays. 
+            Our low-latency architecture is powered by:
+        </p>
+        <ul class="list-disc list-inside mt-2">
+            <li><strong>Optimized Stochastic Models:</strong> Generates dynamic musical patterns in milliseconds.</li>
+            <li><strong>High-Performance Computing:</strong> Ensures ultra-fast processing for seamless workflow integration.</li>
+            <li><strong>Interactive AI Feedback:</strong> Suggests variations without overriding artistic intent.</li>
+        </ul>
+
+        <h2 class="text-2xl font-semibold mt-6">Shaping the Future of Music Creation</h2>
+        <p class="text-lg mt-2">
+            The future of AI in music isn't about replacing artists—it's about <strong>empowering</strong> them. BeatGen aims to push the boundaries of what’s possible by offering:
+        </p>
+        <ul class="list-disc list-inside mt-2">
+            <li>Real-time musical ideation with minimal latency.</li>
+            <li>Customizable AI parameters, giving producers control over generation styles.</li>
+            <li>Seamless integration into existing production workflows.</li>
+        </ul>
+    
+        <p class="text-lg mt-4">
+            With BeatGen, AI isn't an end goal—it's a creative partner. The journey of music-making remains in the hands of the artist, with technology as a guiding force rather than a replacement. 
+            Welcome to the future of assisted music composition.
+        </p>
+    
+        <!-- <p class="text-lg text-gray-300 mb-6">Generate AI-generated beats with ease using customizable parameters.</p> -->
+    </section>
+
+</body>
+</html>

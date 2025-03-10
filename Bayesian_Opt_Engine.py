@@ -108,7 +108,7 @@ class Bayesian_Opt_Engine:
 
         def sanitize_note(markov_vector, last_note, chord, index):
             curr_note = last_note + (index - 7)
-            if last_note % 7 == 5 and curr_note % 7 == 1 or last_note ^ 7 == 1 and curr_note % 7 == 5:
+            if last_note % 7 == 5 and curr_note % 7 == 1 or last_note % 7 == 1 and curr_note % 7 == 5:
                 markov_vector[index] = 0
             elif curr_note % 7 == 5 and chord != 2 and chord != 4 and chord != 6:
                 markov_vector[index] = 0
@@ -176,7 +176,7 @@ class Bayesian_Opt_Engine:
             note = 0
 
             for i in range(int(self.bars / 1)):
-                if i > 1 and measure_melody[i] == measure_melody[i-2]:
+                if i > 1 and measure_melody[i] == measure_melody[i-2] or i > 0 and measure_melody[i] == measure_melody[i-1]:
                     continue
                 last_note = keynotes[i]
                 temp_notes = []

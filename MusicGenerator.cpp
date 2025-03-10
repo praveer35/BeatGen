@@ -306,8 +306,8 @@ int main() {
 	while (true) {
 		chord_list = chordGen.generateChords();
 		//printVec(chord_list);
-		break;
-		//if (!contains_duplicate(chord_list)) { break; }
+		//break;
+		if (!contains_duplicate(chord_list)) { break; }
 	}
 	//std::vector<std::string> chord_list = chordGen.generateChords();
 	for (const auto& chord : chord_list) {

@@ -1,9 +1,11 @@
-from flask import Flask, render_template, redirect, url_for, request, session, flash, send_file
+from flask import Flask, render_template, redirect, url_for, request, session, flash, send_file, jsonify, g
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import subprocess
+import requests
 from subprocess import Popen, PIPE
 import math
+import random
 import datetime
 import asyncio
 from midiutil import MIDIFile
@@ -22,6 +24,7 @@ import lib
 import midiutil
 
 import fluidsynth
+from PlaybackManager import PlaybackManager
 
 #import db
 
@@ -29,6 +32,7 @@ import fluidsynth
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
+playback_manager = PlaybackManager()
 
 #def get_response(filename):
 
@@ -46,9 +50,54 @@ def init_db():
 
 @app.route('/')
 def home():
-    if 'user_id' in session:
-        return render_template('index.html', username=session['username'])
-    return redirect(url_for('login'))
+    if 'user_id' not in session:
+        #return render_template('index.html', username=session['username'])
+        return render_template('Notes/index.html')
+    #return redirect(url_for('index'))
+
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        # print(request.json)
+        if request.json['action'] == 'delete':
+            generation_id = request.json['generation_id']
+            # delete generation from generations
+            cursor.execute(f'DELETE FROM generations WHERE user_id={session['user_id']} AND generation_id={generation_id}')
+            # delete generation from generation_data
+            cursor.execute(f'DELETE FROM generation_data WHERE generation_id={generation_id}')
+            conn.commit()
+        return 'success'
+
+    cursor.execute("""
+        SELECT g.generation_id, g.created, 
+               (SELECT gd.generation_name 
+                FROM generation_data gd 
+                WHERE gd.generation_id = g.generation_id 
+                LIMIT 1) AS generation_name
+        FROM generations g
+        WHERE g.user_id = ?
+        ORDER BY created DESC;
+    """, (session['user_id'],))
+    # cursor.execute('SELECT created, generation_name, generation_id FROM generations ORDER BY created DESC')
+    x = cursor.fetchall()
+    #x = [[n[0], n[1] for n in cursor.fetchall()]
+    print(x)
+    conn.close()
+    #return render_template("saved.html", x=x)
+    return render_template('Notes/home.html', x=x, username=session['username'])
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/upgrade')
+def upgrade():
+    return render_template('upgrade.html')
+
+@app.route('/profile')
+def profile():
+    return render_template('profile.html', username=session['username'])
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -60,7 +109,8 @@ def register():
 
         if password != confirm_password:
             flash('Passwords do not match!', 'danger')
-            return redirect(url_for('register'))
+            return redirect(url_for('login'))
+            #return jsonify({'message': 'Passwords do not match.'})
 
         hashed_password = generate_password_hash(password)
         try:
@@ -73,7 +123,9 @@ def register():
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
             flash('Email already registered. Please log in.', 'danger')
+            #return redirect(url_for('login'))
             return redirect(url_for('login'))
+            #return jsonify({'message': 'Email already registered.'})
 
     return render_template('register.html')
 
@@ -105,7 +157,7 @@ def logout():
     session.pop('user_id', None)
     session.pop('username', None)
     flash('You have been logged out.', 'success')
-    return redirect(url_for('login'))
+    return redirect(url_for('home'))
 
 @app.route('/create')
 def create():
@@ -157,7 +209,7 @@ def saved():
     # cursor.execute('SELECT created, generation_name, generation_id FROM generations ORDER BY created DESC')
     x = cursor.fetchall()
     #x = [[n[0], n[1] for n in cursor.fetchall()]
-    print(x)
+    # print(x)
     conn.close()
     return render_template("saved.html", x=x)
 
@@ -200,48 +252,95 @@ def track(generation_id):
 
     return render_template('new-generate.html', len=len(melody), melody=melody, arpeggio=arpeggio, bass=bass, chords=chords, key=1, bars=len(chords), soundfont_titles=soundfont_titles, generation_name=tracks[0][1], generation_id=generation_id, MODE='TRACK')
 
+@app.before_request
+def stop_playback_on_route_change():
+    playback_manager.stop_playback()
+
+@app.route('/loop', methods=['POST'])
+def loop():
+    data = request.json
+    response = playback_manager.start_playback(
+        measures=data['measures'],
+        velocities=data['velocities'],
+        bpm=data['bpm'],
+        transpose=data['transpose'],
+        soundfont_map=data['soundfontMap'],
+        loop=True
+    )
+    return jsonify(response)
+
+@app.route('/stop', methods=['POST'])
+def stop():
+    playback_manager.stop_playback()
+    return jsonify({"data": "loop stopped"})
+
+
 @app.route('/play', methods=['POST'])
 def play():
-    measures = request.json['measures']
-    print(type(measures))
-    if type(measures) == str:
-        measures = json.loads(measures)
-    velocities = request.json['velocities']
-    bpm = request.json['bpm']
-    channel_velocities = []
-    tracks = []
-    sfids = []
-    soundfont_map = request.json['soundfontMap']
-    print(soundfont_map)
+    data = request.json
+    response = playback_manager.start_playback(
+        measures=data['measures'],
+        velocities=data['velocities'],
+        bpm=data['bpm'],
+        transpose=data['transpose'],
+        soundfont_map=data['soundfontMap'],
+        loop=False
+    )
+    return jsonify(response)
 
-    synth = fluidsynth.Synth()
-    #synth.delete()
-    synth.start()
-    print('synth started')
-    for key in measures.keys():
-        synth_track = lib.synth_convert(measures[key])
-        channel_velocities.append(velocities[key])
-        tracks.append(synth_track)
-        sfids.append(synth.sfload('Soundfonts/'+soundfont_map[key]+'.sf2'))
+@app.route('/play_saved/<generation_id>', methods=['POST'])
+def play_saved(generation_id):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT track_name, generation_name, user_id, track_data FROM generation_data WHERE generation_id=' + generation_id)
+    tracks = cursor.fetchall()
 
-    for channel in range(len(tracks)):
-        synth.program_select(channel, sfids[channel], 0, 0)
-    async def play_note_on_channel(synth, note, start_time, end_time, channel):
-        await asyncio.sleep(start_time * 60 / bpm)
-        synth.noteon(channel, note, channel_velocities[channel])
-        await asyncio.sleep((end_time - start_time) * 60 / bpm)
-        synth.noteoff(channel, note)
-    async def play_track(synth, track, channel):
-        tasks = [play_note_on_channel(synth, note, start_time, end_time, channel) for note, start_time, end_time in track]
-        await asyncio.gather(*tasks)
-    async def main_player():
-        tasks = [play_track(synth, track, channel) for channel, track in enumerate(tracks)]
-        await asyncio.gather(*tasks)
-        synth.delete()
-    # Run the main function
-    asyncio.run(main_player())
+    track_data = {}
+    for track_name, _, _, track_bytes in tracks:
+        if track_name in ['melody', 'arpeggio', 'bass']:
+            track_data[track_name] = np.frombuffer(track_bytes, dtype=np.float32).reshape(-1, 2).tolist()
+        elif track_name == 'chords':
+            track_data[track_name] = np.frombuffer(track_bytes, dtype=np.int16).tolist()
 
-    return {'data': 'success'}
+    melody = track_data.get('melody', [])
+    arpeggio = track_data.get('arpeggio', [])
+    bass = track_data.get('bass', [])
+    chords = track_data.get('chords', [])
+
+    chords_notes = []
+    for note in chords:
+        chords_notes.append([
+            [27 - (note + 1), 0, 15],
+            [27 - (note + 3), 0, 15],
+            [27 - (note + 5), 0, 15]
+        ])
+
+    data = {
+        'measures': {
+            'melody': lib.PYTHON_TO_JS_MELODY_CONVERTER(melody),
+            'arpeggio': lib.PYTHON_TO_JS_MELODY_CONVERTER(arpeggio),
+            'bass': lib.PYTHON_TO_JS_MELODY_CONVERTER(bass),
+            'chords': chords_notes
+        },
+        'velocities': {
+            'melody': 100,
+            'arpeggio': 0,
+            'bass': 100,
+            'chords': 100
+        },
+        'bpm': 180,
+        'soundfontMap': {
+            'melody': '_Yamaha_C3_Grand_Piano',
+            'arpeggio': '_Yamaha_C3_Grand_Piano',
+            'bass': '_Yamaha_C3_Grand_Piano',
+            'chords': '_Yamaha_C3_Grand_Piano'
+        },
+        'transpose': int(random.random() * 12) - 5
+    }
+
+    response = requests.post('http://localhost:1601/play', json=data)
+
+    return jsonify(response.json())
 
 # @app.route('/play', methods=['POST'])
 # def play():
@@ -290,11 +389,12 @@ def save():
         measures = json.loads(measures)
     velocities = request.json['velocities']
     bpm = request.json['bpm']
+    transpose = request.json['transpose']
     channel_velocities = []
     tracks = []
     for key in measures.keys():
         # if key == 'drums': continue
-        synth_track = lib.synth_convert(measures[key])
+        synth_track = lib.synth_convert(measures[key], transpose)
         channel_velocities.append(velocities[key])
         tracks.append(synth_track)
     print(tracks[0])
@@ -433,6 +533,45 @@ def generate():
         average_entropy=voice_line['average_entropy'],
         confidence_percentile=voice_line['confidence_percentile'],
         geometric_mean=voice_line['geometric_mean'], MODE='GENERATE')
+
+@app.route('/try-claude', methods=['GET'])
+def try_claude():
+    melody = [
+        [4, 1], [3, 1], [5, 1], [4, 1],   # Bar 1 (Starting strong, downward motion)
+        [6, 1], [5, 1], [4, 1], [3, 1],   # Bar 2 (Resolution, building)
+        [5, 1], [4, 1], [6, 1], [7, 1],   # Bar 3 (Lifting, but still moody)
+        [6, 1], [4, 1], [5, 1], [4, 1]    # Bar 4 (Return, closing with tension)
+    ]
+
+    chords = [6, 4, 2, 5]  # Amin, Fmaj, Dmin, Gmaj (1 per bar)
+
+    arpeggio = [
+        [0, 1], [4, 1], [5, 1], [4, 1],   # Bar 1 (Simple, grounded)
+        [1, 1], [2, 1], [4, 1], [2, 1],   # Bar 2 (Reaching, more movement)
+        [0, 1], [4, 1], [5, 1], [7, 1],   # Bar 3 (Rising tension)
+        [6, 1], [5, 1], [4, 1], [4, 1]    # Bar 4 (Return, grounding)
+    ]
+
+    bass = [
+        [0, 1], [0, 1], [5, 1], [0, 1],     # Bar 1 - A (Solid foundation)
+        [5, 1], [3, 1], [5, 1], [3, 1],     # Bar 2 - F (Gradual lift)
+        [3, 1], [0, 1], [3, 1], [0, 1],     # Bar 3 - D (Slight dissonance)
+        [6, 1], [4, 1], [6, 1], [4, 1]      # Bar 4 - G (Subtle conclusion)
+    ]
+
+    key = 1
+    bars = 4
+    drums = []
+    soundfont_titles = [x[:-4] for x in os.listdir("Soundfonts") if ".sf2" in x.lower()]
+    all_input_data = {}
+
+    return render_template('new-generate.html', len=len(melody),
+        melody=melody, arpeggio=arpeggio, bass=bass, chords=chords, drums=drums,
+        key=key, bars=len(chords), soundfont_titles=soundfont_titles, all_input_data=all_input_data,
+        sensibility_index=0,
+        average_entropy=0,
+        confidence_percentile=0,
+        geometric_mean=0, MODE='GENERATE')
 
 @app.route('/train', methods=['POST'])
 def train():
@@ -597,8 +736,8 @@ def regenerate():
             track = lib.get_arpeggio(data_input)
         elif request.json['track_name'] == 'bass':
             track = lib.get_bass(data_input)
-        elif request.json['track_name'] == 'drums':
-            track = lib.get_drums(data_input)
+        # elif request.json['track_name'] == 'drums':
+        #     track = lib.get_drums(data_input)
 
     # melody = lib.get_regeneration_line(data_input)['melody']
     print(track)
