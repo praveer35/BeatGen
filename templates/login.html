@@ -1,16 +1,112 @@
-{% extends "base.html" %}
-{% block title %}Login{% endblock %}
-{% block content %}
-<h1>Login</h1>
-<form method="POST">
-    <p>
-        <label for="email">Email</label><br>
-        <input type="email" id="email" name="email" required>
-    </p>
-    <p>
-        <label for="password">Password</label><br>
-        <input type="password" id="password" name="password" required>
-    </p>
-    <p><button type="submit">Login</button></p>
-</form>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Music Generator - Login / Sign Up</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: radial-gradient(circle at top left, #1e1e3f, #0d0d1a);
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="text-white font-sans flex flex-col items-center min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 w-full bg-black bg-opacity-80 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+                <a href="">BeatGen</a>
+            </h1>
+            <ul class="hidden md:flex space-x-6">
+                <li><a href="{{ url_for('home') }}" class="hover:text-blue-400">Home</a></li>
+                <li><a href="#about" class="hover:text-blue-400">About</a></li>
+                <li><a href="#demo" class="hover:text-blue-400">Demo</a></li>
+                <li><a href="#pricing" class="hover:text-blue-400">Pricing</a></li>
+            </ul>
+            <a href="{{ url_for('login') }}" class="hidden md:block px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md text-lg font-semibold hover:opacity-90">
+                Get Started
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section with Advertising -->
+    <section class="text-center mb-12 mt-40 max-w-4xl mx-auto mt-10">
+        <h1 class="text-4xl font-extrabold text-white mb-6">Create Music with AI in a second. Literally.</h1>
+        <p class="text-xl text-gray-200 mb-6">BeatGen is revolutionizing music creation using artificial intelligence. No experience required, just your creativity.</p>
+        <p class="text-lg text-gray-300">Join the community of creators and explore a world of AI-generated beats.</p>
+    </section>
+
+    <!-- Login / Sign Up Section -->
+    <div class="w-full mb-20 max-w-sm bg-gray-800 p-8 rounded-lg shadow-lg">
+        <h2 class="text-3xl font-semibold text-center mb-6">Welcome to BeatGen</h2>
+        <p class="text-lg text-center text-gray-400 mb-6">Join creators using AI-generated music to make unique beats.</p>
+
+        <!-- Toggle Buttons -->
+        <div class="flex justify-between mb-6">
+            <button id="loginBtn" class="w-full py-2 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 rounded-md hover:opacity-90">Login</button>
+            <button id="signupBtn" class="w-full py-2 text-lg font-semibold bg-gradient-to-r rounded-md hover:opacity-90">Sign Up</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="space-y-4" action="/login" method="POST">
+            <div>
+                <label for="email" class="block text-gray-300">Email</label>
+                <input type="email" id="email" name="email" class="w-full p-2 bg-gray-700 text-gray-300 rounded-md" placeholder="Enter your email" required>
+            </div>
+            <div>
+                <label for="password" class="block text-gray-300">Password</label>
+                <input type="password" id="password" name="password" class="w-full p-2 bg-gray-700 text-gray-300 rounded-md" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="w-full py-2 mt-4 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 rounded-md hover:opacity-90">Login</button>
+        </form>
+
+        <!-- Sign-Up Form -->
+        <form id="signupForm" class="space-y-4 hidden" action="/register" method="POST">
+            <div>
+                <label for="username" class="block text-gray-300">Username</label>
+                <input type="text" id="username" name="username" class="w-full p-2 bg-gray-700 text-gray-300 rounded-md" placeholder="Enter your username" required>
+            </div>
+            <div>
+                <label for="email" class="block text-gray-300">Email</label>
+                <input type="email" id="email" name="email" class="w-full p-2 bg-gray-700 text-gray-300 rounded-md" placeholder="Enter your email" required>
+            </div>
+            <div>
+                <label for="password" class="block text-gray-300">Password</label>
+                <input type="password" id="password" name="password" class="w-full p-2 bg-gray-700 text-gray-300 rounded-md" placeholder="Create a password" required>
+            </div>
+            <div>
+                <label for="confirm_password" class="block text-gray-300">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="w-full p-2 bg-gray-700 text-gray-300 rounded-md" placeholder="Confirm your password" required>
+            </div>
+            <button type="submit" class="w-full py-2 mt-4 text-lg font-semibold bg-gradient-to-r from-purple-500 to-blue-600 rounded-md hover:opacity-90">Sign Up</button>
+        </form>
+    </div>
+
+    <script>
+        // Toggle between login and sign-up forms
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+
+        loginBtn.addEventListener('click', () => {
+            loginForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+            loginBtn.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-purple-600');
+            signupBtn.classList.remove('bg-gradient-to-r', 'from-purple-500', 'to-blue-600');
+        });
+
+        signupBtn.addEventListener('click', () => {
+            signupForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+            signupBtn.classList.add('bg-gradient-to-r', 'from-purple-500', 'to-blue-600');
+            loginBtn.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-purple-600');
+        });
+    </script>
+
+</body>
+</html>

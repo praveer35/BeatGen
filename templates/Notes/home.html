@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeatGen - App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: radial-gradient(circle at top left, #1e1e3f, #0d0d1a);
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  </head>
+<body class="text-white font-sans">
+
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 w-full bg-black bg-opacity-80 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+            <!-- Left: Logo -->
+             <a href="{{ url_for('home') }}">
+            <h1 class="hidden md:flex text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+                BeatGen
+            </h1>
+            </a>
+            
+            <!-- Center: Navigation Links -->
+            <div class="flex-grow flex justify-center">
+                <ul class="hidden md:flex space-x-8">
+                    <li><a href="{{ url_for('home') }}" class="hover:text-blue-400">Home</a></li>
+                    <li><a href="{{ url_for('about') }}" class="hover:text-blue-400">About</a></li>
+                    <!-- <li><a href="#" class="hover:text-blue-400">Friends</a></li> -->
+                    <li><a href="{{ url_for('upgrade') }}" class="hover:text-blue-400">Upgrade</a></li>
+                    <li><a href="{{ url_for('profile') }}" class="hover:text-blue-400">Profile</a></li>
+                </ul>
+            </div>
+
+            <!-- Right: Create Button -->
+            <a href="{{ url_for('create') }}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md text-lg font-semibold hover:opacity-90">
+                Create +
+            </a>
+        </div>
+    </nav>
+
+    <br /><br /><br />
+    <button id="menu-toggle" class="md:hidden fixed top-4 left-4 z-50 text-black bg-white px-3 py-2 rounded-md">
+        ☰
+    </button>   
+
+    <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="md:w-80 w-64 bg-gradient-to-b from-purple-900 to-blue-900 h-full fixed top-0 p-6 text-white ml-[-275px] md:ml-0 transition-all duration-300 ease-in-out">
+        <br /><br /><br />
+
+        <!-- Pending Collaboration Requests -->
+        <!-- <div class="mb-8">
+            <h2 class="text-lg font-semibold text-gray-300 mb-3">Pending Collaboration Requests</h2>
+            <ul class="space-y-3">
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>🔥 Trap Beat Collab</span>
+                    <button class="bg-blue-500 px-2 py-1 text-xs rounded">Accept</button>
+                </li>
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>🎸 Acoustic Jam</span>
+                    <button class="bg-blue-500 px-2 py-1 text-xs rounded">Accept</button>
+                </li>
+            </ul>
+        </div> -->
+
+        <!-- Recent Projects -->
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold text-gray-300 mb-3">Recent Projects</h2>
+            <ul class="space-y-3">
+                {% for i in range(3): %}
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>{{ x[i][2] }}</span>
+                    <span class="text-xs text-gray-400">{{ x[i][1][:-9] }}</span>
+                    <a href="{{ url_for('track', generation_id=x[i][0]) }}">
+                        <button class="bg-white hover:bg-gray-200 text-gray-800 rounded-full w-10 h-10 flex items-center justify-center">
+                            <i class="fas fa-pen text-lg"></i>
+                        </button>
+                    </a>
+                </li>
+                {% endfor %}
+                <!-- <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>Lo-Fi Chill</span>
+                    <span class="text-xs text-gray-400">2 days ago</span>
+                </li>
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>Drum Loop</span>
+                    <span class="text-xs text-gray-400">5 days ago</span>
+                </li> -->
+            </ul>
+        </div>
+
+        <!-- Starred Projects -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-300 mb-3">Starred Projects</h2>
+            <p>No starred projects yet!</p>
+            <!-- <ul class="space-y-3">
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>Synthwave Jam</span>
+                    <button class="text-yellow-400">★</button>
+                </li>
+                <li class="p-3 bg-gray-800 rounded-md flex justify-between items-center">
+                    <span>Orchestral Melody</span>
+                    <button class="text-yellow-400">★</button>
+                </li>
+            </ul> -->
+        </div>
+    </aside> 
+
+    <main class="flex-1 pl-12 pt-6 md:ml-80 ml-0 w-full">
+        <!-- Main Content -->
+<!-- Main Content -->
+<section class="flex flex-col justify-start items-start text-left px-6">
+    <h1 class="text-6xl text-white font-bold bg-clip-text">
+        Hey, {{ username }}.
+    </h1>
+    <p class="mt-4 text-lg text-gray-300 max-w-lg">
+        Create AI-generated beats instantly.
+    </p>
+    <a href="{{ url_for('create') }}" class="mt-6 px-10 py-4 text-xl bg-gradient-to-r from-blue-500 to-purple-600 rounded-md font-semibold hover:opacity-90 shadow-lg">
+        Generate Something New
+    </a>
+</section>
+
+<!-- Collaboration Section -->
+<!-- <section class="py-20 px-6">
+    <h2 class="text-3xl font-semibold text-left">Collaborate</h2>
+    <p class="mt-4 text-gray-300 text-left">Work together with friends to create amazing beats.</p>
+
+    <div class="mt-8 flex justify-start space-x-6">
+        <a href="#" class="px-8 py-3 text-lg bg-gradient-to-r from-green-500 to-teal-600 rounded-md font-semibold hover:opacity-90 shadow-lg">
+            Start a Collaborative Project
+        </a>
+
+        <a href="#" class="px-8 py-3 text-lg bg-gradient-to-r from-purple-500 to-pink-600 rounded-md font-semibold hover:opacity-90 shadow-lg">
+            Manage Friends
+        </a>
+    </div>
+</section> -->
+
+    <!-- Your Projects Section -->
+    <section class="py-20 px-6 text-left">
+        <h2 class="text-3xl font-semibold">Your Projects</h2>
+        <p class="mt-4 text-gray-300">Manage your previously generated beats.</p>
+<!-- Project Rows -->
+<div class="mt-12 space-y-6 w-11/12">
+    {% for n in x: %}
+    <div class="flex justify-between items-center bg-gray-800 rounded-lg p-6 shadow-md">
+        <div class="flex items-center space-x-6">
+            <span class="text-gray-400">{{ n[1][:-9] }}</span>
+            <button data-generation-id="{{ n[0] }}" 
+                    class="play-button bg-blue-500 hover:bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center">
+                <i class="fas fa-play text-lg"></i>
+            </button>
+            <span class="text-lg font-medium">{{ n[2] }}</span>
+            <!-- <span class="text-gray-500">🌊</span> -->
+        </div>
+        <div class="flex space-x-6">
+            <a href="{{ url_for('track', generation_id=n[0]) }}">
+                <button class="bg-white hover:bg-gray-200 text-gray-800 rounded-full w-10 h-10 flex items-center justify-center">
+                    <i class="fas fa-pen text-lg"></i>
+                </button>
+            </a>
+            <button onclick="deleteSaved({{ n[0] }})" class="bg-red-500 hover:bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center">
+                <i class="fas fa-trash text-lg"></i>
+            </button>
+        </div>
+    </div>
+    
+    {% endfor %}
+</div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-10 text-center text-gray-400">
+        © 2025 BeatGen | All Rights Reserved
+    </footer>
+</main>
+</div>
+    <script>
+        const menuToggle = document.getElementById("menu-toggle");
+        const sidebar = document.getElementById("sidebar");
+    
+        // Add event listener to the hamburger button
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('ml-[-275px]');  // Toggles the margin to slide in/out
+        });
+
+        function deleteSaved(generation_id) {
+            return;         // safeguard
+            fetch('/saved', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'delete',
+                    generation_id: generation_id
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+                window.location.reload();
+            });
+        }
+
+        // Add an event listener for all elements with the class 'play-button'
+        document.querySelectorAll('.play-button').forEach(button => {
+            button.addEventListener('click', function() {
+                // Get the generation ID from the data attribute of the clicked button
+                var generationId = this.getAttribute('data-generation-id');
+                
+                // Send the POST request with the generation ID
+                fetch("{{ url_for('play_saved', generation_id='') }}" + generationId, {
+                    method: "POST",   // Set the method to POST
+                    headers: {
+                        'Content-Type': 'application/json', // Send data as JSON
+                    },
+                    body: JSON.stringify({
+                        generation_id: generationId // Pass the generation ID in the body
+                    })
+                })
+                .then(response => response.json())  // Parse the JSON response
+                .then(data => {
+                    // Handle the response here
+                    console.log(data);
+                    // alert('Track is being played!');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

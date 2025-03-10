@@ -91,6 +91,15 @@ private:
 		{0.1, 0.14, 0.19, 0.17, 0.1, 0, 0.3},
 		{0.12, 0.15, 0.15, 0.1, 0.27, 0.21, 0}
 	}};
+	// std::array<std::array<double, SCALE_LEN>, SCALE_LEN> pFSM = {{
+	// 	{0, 0.15, 0.30, 0, 0.05, 0.10, 0.40},  // CMaj → more likely to move to Dmin, Emin, Amin
+	// 	{0, 0, 0.40, 0.10, 0, 0.05, 0.45},    // Dmin → prefers staying on minor chords
+	// 	{0, 0.10, 0, 0.05, 0, 0, 0.85},       // Emin → prefers moving to Amin
+	// 	{0, 0.20, 0.30, 0, 0, 0, 0.50},       // EMaj → more minor preference
+	// 	{0.05, 0.25, 0.10, 0, 0, 0, 0.60},    // FMaj → prefers Dmin and Amin
+	// 	{0.10, 0.15, 0.30, 0, 0, 0, 0.45},    // GMaj → prefers Emin and Amin
+	// 	{0.10, 0.20, 0.40, 0, 0.05, 0.05, 0}  // Amin → prefers staying in the minor space
+	// }};
 	int key;
 	int bars;
 
@@ -293,9 +302,11 @@ int main() {
 	//bars = 4;
 	ChordGenerator chordGen(key, bars);
 	std::vector<int> chord_list;
+	// chord_list = chordGen.generateChords();
 	while (true) {
 		chord_list = chordGen.generateChords();
 		//printVec(chord_list);
+		//break;
 		if (!contains_duplicate(chord_list)) { break; }
 	}
 	//std::vector<std::string> chord_list = chordGen.generateChords();

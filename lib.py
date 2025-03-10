@@ -5,6 +5,10 @@ import math
 import numpy as np
 from subprocess import Popen, PIPE
 from Bayesian_Opt_Engine import Bayesian_Opt_Engine
+from new_voice_line import VoiceLineGenerator
+from new_regeneration_line import VoiceLineRegenerator
+#from new_rhythm import RhythmGenerator
+from transformer_test import RhythmGenerator
 
 def get_chords(key, bars):
 
@@ -41,22 +45,36 @@ def get_chords(key, bars):
     return chords
 
 def get_voice_line(json_data):
-    p = Popen(['python3', 'voice_line.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
-    melody_stdout_data, err = p.communicate(input=json.dumps(json_data))
-    if err: print('VOICE_LINE_ERR:', err)
+    # p = Popen(['python3', 'voice_line.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+    # melody_stdout_data, err = p.communicate(input=json.dumps(json_data))
+    # if err: print('VOICE_LINE_ERR:', err)
+    # try:
+    #     return json.loads(melody_stdout_data)
+    # except:
+    #     return get_voice_line(json_data)
     try:
-        return json.loads(melody_stdout_data)
+        gen = VoiceLineGenerator()
+        return gen.engine(json_data)
     except:
-        return get_voice_line(json_data)
+        return gen.engine(json_data)
+
     
 def get_regeneration_line(json_data):
-    p = Popen(['python3', 'regeneration_line.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
-    melody_stdout_data, err = p.communicate(input=json.dumps(json_data))
-    if err: print('VOICE_LINE_ERR:', err)
+    # print('try')
+    # p = Popen(['python3', 'regeneration_line.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+    # melody_stdout_data, err = p.communicate(input=json.dumps(json_data))
+    # if err: print('VOICE_LINE_ERR:', err)
+    # print(json.loads(melody_stdout_data))
+    # try:
+    #     print(melody_stdout_data)
+    #     return json.loads(melody_stdout_data)
+    # except:
+    #     return get_regeneration_line(json_data)
     try:
-        return json.loads(melody_stdout_data)
+        regen = VoiceLineRegenerator()
+        return regen.engine(json_data)
     except:
-        return get_voice_line(json_data)
+        return regen.engine(json_data)
 
 def get_arpeggio(json_data):
     chords = json_data['chords']
@@ -64,27 +82,77 @@ def get_arpeggio(json_data):
     json_data['rhythm'] = [0.5] * 8
     arpeggio_raw = get_voice_line(json_data)['melody']
     arpeggio_mid = [arpeggio_raw[i][0] for i in range(len(arpeggio_raw))]
-    arpeggio_mid *= len(chords)
-    print(arpeggio_mid)
-    for i in range(len(chords) * 8):
-        arpeggio_mid[i] += chords[i // 8] - chords[0]
-    print(arpeggio_mid)
-    arpeggio = [[i, 0.5] for i in arpeggio_mid]
+    arpeggio_mid *= len(chords) * 1
+    # print(arpeggio_mid)
+    for i in range(len(chords) * (8 * 1)):
+        arpeggio_mid[i] += chords[i // (8 * 1)] - chords[0]
+    # print(arpeggio_mid)
+    arpeggio = [[i, (0.5 / 1)] for i in arpeggio_mid]
+    json_data['chords'] = chords
     return arpeggio
 
-def get_rhythm(json_data):
-    p = Popen(['python3', 'rhythm.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
-    rhythm_stdout_data, _ = p.communicate(input=json.dumps(json_data))
-    return json.loads(rhythm_stdout_data)['rhythm']
+def get_bass(json_data):
+    chords = json_data['chords']
+    pattern = json_data['pattern']
+    bass = []
+    for chord in chords:
+        note = ((chord + 1) % 7 - 1) - 6
+        if pattern == 0:
+            for _ in range(4):
+                bass.append([note, 0.5])
+                bass.append([note - 7, 0.5])
+        elif pattern == 1:
+            for _ in range(4):
+                bass.append([note - 7, 0.5])
+                bass.append([note - 7, 0.5])
+    return bass
 
-def synth_convert(measures):
+def get_drums(json_data):
+    bars = json_data['bars']
+    pattern = json_data['pattern']
+    drums = []
+    for _ in range(bars):
+        if pattern == 0:
+            for _ in range(4):
+                drums.append([0, 0.5])
+                drums.append([-40, 0.5])
+    return drums
+
+def get_rhythm(json_data):
+    # p = Popen(['python3', 'rhythm.py'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+    # rhythm_stdout_data, _ = p.communicate(input=json.dumps(json_data))
+    # return json.loads(rhythm_stdout_data)['rhythm']
+    gen = RhythmGenerator()
+    return gen.engine(json_data)['rhythm']
+
+def PYTHON_TO_JS_MELODY_CONVERTER(rawMelody):
+    melody = []
+    track_measures = []
+    measure_melody = []
+    leftOffset = 0
+    for note in rawMelody:
+        if leftOffset % 16 == 0:
+            if len(measure_melody) != 0:
+                track_measures.append(measure_melody)
+            measure_melody = []
+        start = leftOffset
+        end = leftOffset + note[1] * 4
+        rank = 20 - note[0]
+        melody.append([rank, start, end])
+        measure_melody.append([int(rank), int(start) % 16, int(end - 1) % 16 + 1])
+        leftOffset = end
+    if len(measure_melody) != 0:
+        track_measures.append(measure_melody)
+    return track_measures
+
+def synth_convert(measures, transpose=0):
     synth_melody = []
     c_scale_intervals = [0, 2, 3, 5, 7, 8, 10]
     for i in range(len(measures)):
         for note in measures[i]:
             note[0] = 20 - note[0]
             #print(note)
-            synth_note = 57 + (note[0] // 7) * 12 + c_scale_intervals[note[0] % 7]
+            synth_note = 57 + (note[0] // 7) * 12 + c_scale_intervals[int(note[0] % 7)] + transpose
             duration = (note[2] - note[1]) / 4
             if duration > 0:
                 synth_melody.append((synth_note, 4 * i + note[1] / 4, 4 * i + note[2] / 4))

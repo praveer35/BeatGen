@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create AI Music</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: radial-gradient(circle at top left, #1e1e3f, #0d0d1a);
+            color: white;
+        }
+        section {
+            padding-left: 15%;
+            padding-right: 15%;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="h-screen">
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 w-full bg-black bg-opacity-80 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+            <!-- Left: Logo -->
+             <a href="{{ url_for('home') }}">
+            <h1 class="hidden md:flex text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+                BeatGen
+            </h1>
+            </a>
+
+            <!-- Center: Navigation Links -->
+            <div class="flex-grow flex justify-center">
+                <ul class="hidden md:flex space-x-8">
+                    <li><a href="{{ url_for('home') }}" class="hover:text-blue-400">Home</a></li>
+                    <li><a href="{{ url_for('about') }}" class="hover:text-blue-400">About</a></li>
+                    <!-- <li><a href="#" class="hover:text-blue-400">Friends</a></li> -->
+                    <li><a href="{{ url_for('upgrade') }}" class="hover:text-blue-400">Upgrade</a></li>
+                    <li><a href="{{ url_for('profile') }}" class="hover:text-blue-400">Profile</a></li>
+                </ul>
+            </div>
+
+            <!-- Right: Create Button -->
+            <a href="{{ url_for('create') }}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md text-lg font-semibold hover:opacity-90">
+                Create +
+            </a>
+        </div>
+    </nav>
+    <!-- Header Section -->
+    <section class="text-center py-20">
+        <h1 class="text-5xl mt-12 font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+            Upgrade
+        </h1>
+        <br />
+        <h1 class="text-3xl mt-12 font-bold text-red-300 bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+            Coming soon!
+        </h1>
+        <br />
+        <h2>Currently, we are a 100% free service. However, we are currently in the process of building more powerful tools that you can use with a paid plan.</h2>
+        <!-- <p class="text-lg text-gray-300 mb-6">Generate AI-generated beats with ease using customizable parameters.</p> -->
+    </section>
+
+</body>
+</html>

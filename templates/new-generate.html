@@ -1,9 +1,7 @@
-    {% extends "base.html" %}
-    {% block title %}Home{% endblock %}
-    {% block content %}
+    <a href="{{ url_for('home') }}" style="position: absolute; top: 15px; left: 15px; background-color: blue; border-radius: 25px; padding: 10px;"><< Back</a>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DAW MIDI Notes</title>
+    <title>Sandbox DAW</title>
     <style>
 a, a:visited {
     color: white;
@@ -87,6 +85,11 @@ body {
     height: 4px;
 }
 
+
+  .note.visible {
+    opacity: 1;
+  }
+
 .resize-handle {
     width: 5px;
     height: 100%;
@@ -108,25 +111,28 @@ body {
     background-color: rgba(0, 0, 255, 0.2);
 }
 
+
     </style>
 </head>
 <body>
+    <h1 style="text-align:center;font-size:48px;margin-bottom:-20px;">Sandbox</h1>
     <div id="all-daws"></div>
     <!-- <div id="daw-container">
     </div> -->
     <!-- <div id="parent-container">
         <div id="daw-container-notes" class="daw-container" style="width:50px;"></div>
     </div> -->
-    <div style="position: fixed; right: 10px; top: 10px; width: 200px; height: 400px; background-color: purple;">
+    <div style="position: fixed; right: 10px; top: 10px; width: 200px; height: 400px; padding: 10px; background-color: blue;">
         <p>Hide the following:</p>
         <button onclick="hideToggle('melody')">melody</button>
         <button onclick="hideToggle('arpeggio')">arpeggio</button>
+        <button onclick="hideToggle('bass')">bass</button>
         <button onclick="hideToggle('chords')">chords</button>
-        <p>BPM: <input id="bpm" type="text" value="120"></p>
-        <p>Play: (WAIT UP TO 5 SEC)</p>
-        <button onclick="play()">Play</button>
-        <p>Download:</p>
-        <button onclick="save()">Download</button>
+        <!-- <button onclick="hideToggle('drums')">drums</button> -->
+        <p>BPM: <input id="bpm" type="text" value="180" size="5"></p>
+        <p>Transpose: <input id="transpose" type="text" value="6" size="5"></p>
+        <p>Play: <button onclick="play(false)">Play</button><button onclick="play(true)">Loop</button><button onclick="stop()">Stop</button></p>
+        <p>Download: <button onclick="save()">Download</button></p>
         {% if MODE == 'GENERATE': %}
         <p>Save Preferences:</p>
         Name: <input id="generation_name" type="text" value="Untitled "/>
@@ -193,6 +199,20 @@ function PYTHON_TO_JS_MELODY_CONVERTER(rawMelody) {
     return track_measures;
 }
 
+function PYTHON_TO_JS_DRUMS_CONVERTER(rawMelody) {
+    track_measures = []
+    for (let i = 0; i < bars; i++) {
+        measure_drums = []
+        measure_drums.push([0, 0, 2]);
+        measure_drums.push([1, 8, 10]);
+        for (let j = 0; j < 16; j++) {
+            measure_drums.push([2, j*2, j*2+2]);
+        }
+        track_measures.push(measure_drums);
+    }
+    return track_measures;
+}
+
 function JS_TO_PYTHON_MELODY_CONVERTER(rawMelody) {
     console.log(rawMelody);
     let melody = [];
@@ -228,6 +248,17 @@ let selectedNote = null;
 let dawContainers = {};
 let measures = {};
 const soundfontMap = {}; // Stores { name -> selected soundfont title }
+//console.log({{ all_input_data | safe }});
+{% if MODE == 'GENERATE': %}
+const all_input_data = {{ all_input_data | safe }};
+{% else: %}
+const all_input_data = {
+    melody: {},
+    arpeggio: {},
+    bass: {},
+    drums: {}
+};
+{% endif %}
 //const dawContainers = [];
 
 let bars = {{ bars }};
@@ -241,20 +272,27 @@ let bars = {{ bars }};
 
 // document.getElementById('melody').textContent = melody;
 
-function play() {
-    soundfontMap
+function play(loop) {
+    velocities = {};
+    for (const track_name of Object.keys(measures)) {
+        velocities[track_name] = parseInt(document.getElementById(track_name + '-velocity').value);
+    }
     data = {
         measures: measures,
-        velocities: {
-            'melody': parseInt(document.getElementById('melody-velocity').value),
-            'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
-            'chords': parseInt(document.getElementById('chords-velocity').value)
-        },
+        // velocities: {
+        //     'melody': parseInt(document.getElementById('melody-velocity').value),
+        //     'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
+        //     'bass': parseInt(document.getElementById('bass-velocity').value),
+        //     'chords': parseInt(document.getElementById('chords-velocity').value)
+        // },
+        velocities: velocities,
         bpm: parseInt(document.getElementById('bpm').value),
+        transpose: parseInt(document.getElementById('transpose').value),
         soundfontMap: soundfontMap
     }
     console.log(data);
-    fetch('/play', {
+    let route = (loop) ? '/loop' : '/play';
+    fetch(route, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -277,15 +315,35 @@ function play() {
     });
 }
 
+function stop() {
+    fetch('/stop', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+    })
+    .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+    });
+}
+
 function save() {
+    velocities = {};
+    for (const track_name of Object.keys(measures)) {
+        velocities[track_name] = parseInt(document.getElementById(track_name + '-velocity').value);
+    }
     data = {
         measures: measures,
-        velocities: {
-            'melody': parseInt(document.getElementById('melody-velocity').value),
-            'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
-            'chords': parseInt(document.getElementById('chords-velocity').value)
-        },
-        bpm: 120
+        // velocities: {
+        //     'melody': parseInt(document.getElementById('melody-velocity').value),
+        //     'arpeggio': parseInt(document.getElementById('arpeggio-velocity').value),
+        //     'bass': parseInt(document.getElementById('bass-velocity').value),
+        //     'chords': parseInt(document.getElementById('chords-velocity').value)
+        // },
+        velocities: velocities,
+        bpm: parseInt(document.getElementById('bpm').value),
+        transpose: parseInt(document.getElementById('transpose').value)
     }
     console.log(data);
     fetch('/save', {
@@ -318,10 +376,18 @@ function save() {
 }
 
 function train() {
+    // data = {
+    //     melody: JS_TO_PYTHON_MELODY_CONVERTER(measures['melody']),
+    //     chords: {{ chords }},
+    //     generation_name: document.getElementById('generation_name').value
+    // }
     data = {
-        melody: JS_TO_PYTHON_MELODY_CONVERTER(measures['melody']),
         chords: {{ chords }},
         generation_name: document.getElementById('generation_name').value
+    }
+    for (const track_name of Object.keys(measures)) {
+        if (track_name == "chords") { continue; }
+        data[track_name] = JS_TO_PYTHON_MELODY_CONVERTER(measures[track_name]);
     }
     console.log(data);
     document.getElementById('generation_button').innerHTML = "Saved.";
@@ -343,14 +409,16 @@ function regenerate() {
     // e.g. daw-container-melody-2
     let track_name = id_deconstructed[2];
     let bar = parseInt(id_deconstructed[3]);
+    let isolated = !(document.getElementById('regenerate-after').checked);
     data = {
         track_name: track_name,
         track: JS_TO_PYTHON_MELODY_CONVERTER(measures[track_name]),
         chords: {{ chords }},
         bar: bar,
         bar_count: bars,
-        isolated: !(document.getElementById('regenerate-after').checked)
-    }
+        isolated: isolated,
+        data_input: all_input_data[track_name]
+    };
     console.log(data);
     fetch('/regenerate', {
         method: 'POST',
@@ -366,8 +434,9 @@ function regenerate() {
         for (let i = 0; i < measures[track_name].length; i++) {
             dawContainers[track_name][i].querySelectorAll('.note').forEach(note => note.remove());
             addDummyNote(track_name, i);
+            let transition = (i == bar || i > bar && !isolated);
             for (const note of measures[track_name][i]) {
-                createNoteDiv(note[0], note[1], note[2], i, track_name);
+                createNoteDiv(note[0], note[1], note[2], i, track_name, transition);
             }
         }
         showNotes(measures[track_name], track_name);
@@ -410,7 +479,7 @@ function save_changes() {
 // const dawContainer = document.getElementById('daw-container');
 // <div id="daw-container-notes" class="daw-container" style="width:50px;"></div>
 
-function createNoteDiv(note, start, end, dawIndex, name) {
+function createNoteDiv(note, start, end, dawIndex, name, transition=false) {
     // console.log(note + ', ' + start + ', ' + end + ', ' + dawIndex + ', ' + name);
     const noteDiv = document.createElement('div');
     noteDiv.classList.add('note');
@@ -420,10 +489,24 @@ function createNoteDiv(note, start, end, dawIndex, name) {
 
     const resizeHandleDiv = document.createElement('div');
     resizeHandleDiv.classList.add('resize-handle');
+    
+    //noteDiv.style.opacity = '0';
+    // alert('?');
 
     noteDiv.appendChild(resizeHandleDiv);
 
     dawContainers[name][dawIndex].appendChild(noteDiv);
+
+      // Allow the browser to register the new elements before adding the visible class
+      if (transition) {
+        noteDiv.style.opacity = '0';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                noteDiv.style.transition = 'opacity 0.2s ease-in-out';
+                noteDiv.style.opacity = '1';
+            });
+        });
+    }
 
     noteDiv.addEventListener('mousedown', (e) => {
         //e.stopPropagation();
@@ -566,14 +649,14 @@ function createTrack(rawMelody, name) {
                 [27 - (note + 5), 0, 15]
             ]);
         }
-
-        measures[name] = track_measures;
-        console.log(track_measures);
+    } else if (name === 'drums') {
+        track_measures = PYTHON_TO_JS_DRUMS_CONVERTER(rawMelody);
     } else {
         track_measures = PYTHON_TO_JS_MELODY_CONVERTER(rawMelody);
-        measures[name] = track_measures;
-        console.log(track_measures);
     }
+
+    measures[name] = track_measures;
+    console.log(track_measures);
 
     const header = document.createElement('h1');
     header.textContent = name;
@@ -582,7 +665,7 @@ function createTrack(rawMelody, name) {
     const velocity = document.createElement('input');
     velocity.id = name + '-velocity';
     velocity.type = 'text';
-    velocity.value = (name == 'arpeggio') ? 0 : 100;
+    velocity.value = (name == 'arpeggio') ? 70 : 100;
     document.getElementById('all-daws').appendChild(velocity);
 
     // Create dropdown for soundfont selection
@@ -629,6 +712,9 @@ function createTrack(rawMelody, name) {
     dawContainerNotes.id = 'daw-container-' + name + '-notes';
     dawContainerNotes.classList.add('daw-container');
     dawContainerNotes.classList.add('daw-container-notes');
+    if (name === 'drums') {
+        dawContainerNotes.style.height = '75px';
+    }
     dawContainerNotes.style.width = '50px';
     dawContainerNotes.draggable = false;
     dawGroupNotes.appendChild(barDivNotes);
@@ -652,6 +738,9 @@ function createTrack(rawMelody, name) {
         const dawContainer = document.createElement('div');
         dawContainer.id = 'daw-container-' + name + '-' + i;
         dawContainer.classList.add('daw-container');
+        if (name === 'drums') {
+            dawContainer.style.height = '75px';
+        }
         dawContainer.name = name;
 
         // document.getElementById('parent-container-' + name).appendChild(barDiv);
@@ -663,8 +752,10 @@ function createTrack(rawMelody, name) {
         document.getElementById('parent-container-' + name).appendChild(dawGroup);
 
         dawContainers[name].push(document.getElementById('daw-container-' + name + '-' + i));
-
-        addDummyNote(name, i);
+        
+        if (name !== 'drums') {
+            addDummyNote(name, i);
+        }
 
         // Add click event listener to highlight the corresponding dawContainer
         barDiv.addEventListener('click', function () {
@@ -679,27 +770,49 @@ function createTrack(rawMelody, name) {
         });
     }
 
-    for (let i = 0; i < 41; i++) {
-        const noteDiv = document.createElement('div');
-        noteDiv.classList.add('note');
-        noteDiv.dataset.note = i;
-        noteDiv.dataset.start = 0;
-        noteDiv.dataset.end = 2;
-        noteDiv.style.left = '0px';
-        noteDiv.style.top = (25 * i) + 'px';
-        noteDiv.style.width = '50px';
-        const span = document.createElement('span');
-        span.style.position = 'absolute';
-        span.style.top = '2px';
-        span.style.left = '16px';
-        span.textContent = vn(20 - i) + '';
-        noteDiv.appendChild(span);
-        document.getElementById('daw-container-' + name + '-' + 'notes').appendChild(noteDiv);
+    if (name === 'drums') {
+        instruments = ['Kick', 'Snare', 'Hi-hat']
+        for (let i = 0; i < 3; i++) {
+            const noteDiv = document.createElement('div');
+            noteDiv.classList.add('note');
+            noteDiv.dataset.note = i;
+            noteDiv.dataset.start = 0;
+            noteDiv.dataset.end = 2;
+            noteDiv.style.left = '0px';
+            noteDiv.style.top = (25 * i) + 'px';
+            noteDiv.style.width = '50px';
+            const span = document.createElement('span');
+            span.style.position = 'absolute';
+            span.style.top = '2px';
+            span.style.left = '5px';
+            span.textContent = instruments[i];
+            span.style.fontSize = '12px';
+            noteDiv.appendChild(span);
+            document.getElementById('daw-container-' + name + '-' + 'notes').appendChild(noteDiv);
+        }
+    } else {
+        for (let i = 0; i < 41; i++) {
+            const noteDiv = document.createElement('div');
+            noteDiv.classList.add('note');
+            noteDiv.dataset.note = i;
+            noteDiv.dataset.start = 0;
+            noteDiv.dataset.end = 2;
+            noteDiv.style.left = '0px';
+            noteDiv.style.top = (25 * i) + 'px';
+            noteDiv.style.width = '50px';
+            const span = document.createElement('span');
+            span.style.position = 'absolute';
+            span.style.top = '2px';
+            span.style.left = '16px';
+            span.textContent = vn(20 - i) + '';
+            noteDiv.appendChild(span);
+            document.getElementById('daw-container-' + name + '-' + 'notes').appendChild(noteDiv);
+        }
     }
 
     for (let i = 0; i < measures[name].length; i++) {
         for (const note of measures[name][i]) {
-            createNoteDiv(note[0], note[1], note[2], i, name);
+            createNoteDiv(note[0], note[1], note[2], i, name, true);
         }
     }
 
@@ -757,7 +870,10 @@ function createTrack(rawMelody, name) {
 // alert({{ soundfont_titles | safe }});
 createTrack({{ melody }}, 'melody');
 createTrack({{ arpeggio }}, 'arpeggio');
+createTrack({{ bass }}, 'bass');
 createTrack({{ chords }}, 'chords');
+// createTrack([20, 4], 'drums');
+// createTrack({{ drums }}, 'drums');
 //createTrack(measures, 'arpeggio');
 //createTrack(measures, 'chords');
 
@@ -770,4 +886,3 @@ for (let i in dawClassNoteContainers) {
     </script>
 </body>
 </html>
-{% endblock %}
